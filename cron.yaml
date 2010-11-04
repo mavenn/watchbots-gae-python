@@ -1,0 +1,4 @@
+cron:
+#- description: Sample Bot updates
+#  url: /samplebot/cron
+#  schedule: every 10 minutes
