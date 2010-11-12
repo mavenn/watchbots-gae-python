@@ -37,6 +37,13 @@ handlers:
 # - url: /samplebot
 #   script: samplebot.py
 
+- url: /feeds
+  script: feeds.py
+
+- url: /feeds/.*
+  script: feeds.py
+
+
 # catchall handler
 
 - url: .*

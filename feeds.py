@@ -1,11 +1,11 @@
 # Python imports
+import os
 import base64
 import logging
-import os
-import wsgiref.handlers
 from datetime import datetime, timedelta
 
 # AppEngine imports
+import wsgiref.handlers
 from google.appengine.ext import webapp
 from google.appengine.ext import db
 from google.appengine.ext import deferred
