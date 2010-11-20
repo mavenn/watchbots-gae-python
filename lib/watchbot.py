@@ -35,14 +35,14 @@ class BaseHandler(webapp.RequestHandler):
 
     values.update(template_values)
     directory = os.path.dirname(__file__)
-    path = os.path.join(directory, os.path.join('templates', template_name))
+    path = os.path.join(directory, os.path.join('../', 'templates', template_name))
       
     try:
       self.response.out.write(template.render(path, values, debug=True))
     except TemplateDoesNotExist, e:
       self.response.headers["Content-Type"] = "text/html; charset=utf-8"
       self.response.set_status(404)
-      self.response.out.write(template.render(os.path.join('templates', '404.html'), values, debug=True))
+      self.response.out.write(template.render(os.path.join('../', 'templates', '404.html'), values, debug=True))
 
   def error(self, status_code):
     webapp.RequestHandler.error(self, status_code)
