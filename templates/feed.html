@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+
+{% block title %}watchbots{% endblock %}
+{% block meta_description %}{% endblock %}
+
+{% block body %}
+
+<h1>{{stream.title}}</h1>
+
+{% for item in items %}
+  <div style="margin:10px">
+    <div>
+      <a href="{{item.url}}">{{item.title}}</a>  - about {{item.updated|timesince}} ago
+    </div>
+    <div>
+      {{ item.summary }}
+    </div>
+  </div>
+{% endfor %}
+
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+
+{% block title %}watchbots{% endblock %}
+{% block meta_description %}{% endblock %}
+
+{% block body %}
+
+<h1>{{title}}</h1>    
+
+<div class="append-bottom">
+<a href="/{{bot_path}}/new">New Stream</a>
+</div>
+
+{% for stream in streams %}
+  <div>
+    <a href="/{{bot_path}}/{{ stream.stream_id}}">{{stream.title}}</a>  - {{stream.user}}  {{stream.list}}
+  </div>
+{% endfor %}
+
+
+{% endblock %}

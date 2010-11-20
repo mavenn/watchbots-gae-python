@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+
+{% block title %}watchbots{% endblock %}
+{% block meta_description %}{% endblock %}
+
+{% block body %}
+
+<h1>Stream Configuration </h1>    
+
+
+<form method="post" action="/{{bot_path}}">
+
+<div>
+{{ form.as_p }}    
+</div>
+
+<input type="submit" value="Save" />
+</form>
+
+{% endblock %}
