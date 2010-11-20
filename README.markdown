@@ -22,7 +22,8 @@ Edit the app.yaml with your application name
 
 Rename config.py.sample to config.py
 
-Register the stream type on Mavenn
+
+## Register the bot on Mavenn ##
 
 http://mavenn.com/springs/new
 
@@ -49,5 +50,5 @@ Register the parameters your bot will accept
 
 Get your API Key and Auth Token from Mavenn and update your config.py as needed
 
-Publish your GAE app
+## Publish your GAE app ##
 
