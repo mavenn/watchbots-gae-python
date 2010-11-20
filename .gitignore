@@ -1,6 +1,7 @@
 # specific directories
 
 # config/generated files
+config.py
 
 # hidden files
 
