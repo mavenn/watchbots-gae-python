@@ -1,20 +1,20 @@
-This is an H1
-=============
+# This is an H1 #
 
-This is a working implementation of a Mavenn stream bot framework for Google App Engine.  You can use it to begin building your own bots.
+This is a working implementation of a Mavenn stream bot framework for Google App Engine.  You can use it to begin building your own bots.  This framework is built to support many bots within a singl GAE application, but feel free to create a single GAE app for your bot if it warrants the resources and makes more sense that way.
 
 A sample bot, feebot, is included to show a fully functioning bot.  This is the bot currently powering the Feed Streams on Mavenn.
 
 
-Download and install the App Engine SDK
-
-http://code.google.com/appengine/downloads.html
+## Setup Google App Engine ##
 
 
-Create a new App Engine application
+Download and install the App Engine SDK: (http://code.google.com/appengine/downloads.html)
 
-http://appengine.google.com
 
+Register a new App Engine application: (http://appengine.google.com)
+
+
+## Prepare GAE Application ##
 
 Clone this repository
 
