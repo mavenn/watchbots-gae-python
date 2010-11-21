@@ -22,6 +22,13 @@ Edit the app.yaml with your application name
 
 Rename config.py.sample to config.py
 
+Implement your bot
+
+Create your models
+
+Create Indexes
+
+Edit cron.yaml
 
 ## Register the bot on Mavenn ##
 

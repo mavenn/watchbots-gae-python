@@ -10,3 +10,14 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
+- kind: FeedItem
+  properties:
+  - name: stream
+  - name: published
+    direction: desc
+
+- kind: FeedItem
+  properties:
+  - name: stream
+  - name: updated
+    direction: desc
