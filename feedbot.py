@@ -51,18 +51,25 @@ class FeedBot(Watchbot):
       taskqueue.add(url='/feeds/cron', params={})
       
       self.response.headers['Content-Type'] = "application/json"
-      self.response.out.write('{"status": "success", "message": ""}')
+      self.response.out.write('{"status": "success", "message": "stream created"}')
     else:
       webapp.RequestHandler.error(self, 400)
       self.response.headers['Content-Type'] = "application/json"
-      self.response.out.write('{"status": "failed", "message": ""}')
+      self.response.out.write('{"status": "failed", "message": "stream was not created"}')
 
   def update(self, stream_id):
     """Update the feed properties"""
     stream = self.get_stream(stream_id)
     url = self.request.POST.get('url')
+    
+    # reset stream properties
     stream.url = url
+    stream.http_status = None
+    stream.http_etag = None
+    stream.http_last_modified = None
+    stream.last_polled = datetime(1900,1,1)
     stream.put()
+    
     self.response.headers['Content-Type'] = "application/json"
     self.response.out.write('{"status": "success", "message": "stream updated"}')
 
