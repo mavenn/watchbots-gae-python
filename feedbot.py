@@ -138,15 +138,17 @@ class FeedBot(Watchbot):
     return
 
   def _parse_feed(self, stream):
-    #if stream.http_etag is not None and len(stream.http_etag) > 0 and stream.http_last_modified is not None:
-    #  d = feedparser.parse(stream.url, etag=stream.http_etag, modified=stream.http_last_modified)
+    """Helper method to handle conditional HTTP stuff"""
+    if stream.http_etag is not None and len(stream.http_etag) > 0 and stream.http_last_modified is not None:
+      # give feedparser back what it pulled originally, a time.struct_time object
+      return feedparser.parse(stream.url, etag=stream.http_etag, modified=stream.http_last_modified.timetuple())
     if stream.http_etag is not None and len(stream.http_etag) > 0:
-      d = feedparser.parse(stream.url, etag=stream.http_etag)
-    #if stream.http_last_modified is not None:
-    #  d = feedparser.parse(stream.url, modified=stream.http_last_modified)
+      return feedparser.parse(stream.url, etag=stream.http_etag)
+    if stream.http_last_modified is not None:
+      # give feedparser back what it pulled originally, a time.struct_time object
+      return feedparser.parse(stream.url, modified=stream.http_last_modified.timetuple())
     else:
-      d = feedparser.parse(stream.url)
-    return d
+      return feedparser.parse(stream.url)
 
   def _process_entry(self, entry, stream):
     id = None
