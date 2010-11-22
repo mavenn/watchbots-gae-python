@@ -61,7 +61,7 @@ DELETE: http://yourapp.appspot.com/yourbot/stream-id
 
 GET: http://yourapp.appspot.com/yourbot/stream-id.json
 
-Clean the append .json extension
+Clear the "append .json extension" checkbox
 
 Leave the "Use POST with _method instead of DELETE or PUT" unchecked
 
