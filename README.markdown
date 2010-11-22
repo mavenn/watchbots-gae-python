@@ -30,6 +30,21 @@ Create Indexes
 
 Edit cron.yaml
 
+
+## Deploy GAE Application ##
+
+
+
+## Test the GAE Appliction ##
+
+To test your bot, you can use one of these handy web-based HTTP simulators to simulate your REST endpoints as the Mavenn engine will:
+
+ http://hurl.it/
+ http://app.apigee.com/console
+
+
+
+
 ## Register the bot on Mavenn ##
 
 http://mavenn.com/springs/new
