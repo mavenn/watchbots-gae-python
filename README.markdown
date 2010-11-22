@@ -1,6 +1,6 @@
 # This is an H1 #
 
-This is a working implementation of a Mavenn stream bot framework for Google App Engine.  You can use it to begin building your own bots.  This framework is built to support many bots within a singl GAE application, but feel free to create a single GAE app for your bot if it warrants the resources and makes more sense that way.
+This is a working implementation of a Mavenn stream bot framework for Google App Engine (GAE).  You can use it to begin building your own bots.  This framework is built to support many bots within a singl GAE application, but feel free to create a single GAE app for your bot if it warrants the resources and makes more sense that way.
 
 A sample bot, feedbot, is included to show a fully functioning bot.  This is the bot currently powering the Feed Streams on Mavenn.
 
@@ -39,9 +39,8 @@ Edit cron.yaml
 
 To test your bot, you can use one of these handy web-based HTTP simulators to simulate your REST endpoints as the Mavenn engine will:
 
- http://hurl.it/
- http://app.apigee.com/console
-
+ - <http://hurl.it/>
+ - <http://app.apigee.com/console>
 
 
 
