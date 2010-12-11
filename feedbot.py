@@ -13,7 +13,7 @@ from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp import util
 from google.appengine.ext.db import djangoforms
 from google.appengine.api import urlfetch
-from google.appengine.api.labs import taskqueue
+from google.appengine.api import taskqueue
 from django.template import TemplateDoesNotExist
 from django.utils import simplejson
 
@@ -34,6 +34,12 @@ class FeedBot(Watchbot):
     streams = models.FeedStream.all().fetch(20)
     self.generate('streams.html', {"streams": streams, "title": "Feed Streams", "bot_path": "feeds"})
 
+  def validate(self, url):
+    feed = feedparser.parse(stream.url)
+    # Check bozo first
+    #Content-Type: text/xml; charset=UTF-8
+    #<link rel="alternate" type="application/rss+xml" title="RSS" href="http://www.readwriteweb.com/rss.xml" /> 
+    
   def new(self):
     """Display new bot form"""
     form = StreamBotForm(instance=None)
