@@ -71,3 +71,4 @@ Register the parameters your bot will accept
 
 Get your API Key and Auth Token from Mavenn and update your config.py as needed
 
+## Publish your GAE app ##

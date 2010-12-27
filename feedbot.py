@@ -18,6 +18,7 @@ from django.template import TemplateDoesNotExist
 from django.utils import simplejson
 
 # 3rd party library imports
+from lib import feedfinder
 from lib import feedparser
 
 # our own imports
@@ -34,34 +35,33 @@ class FeedBot(Watchbot):
     streams = models.FeedStream.all().fetch(20)
     self.generate('streams.html', {"streams": streams, "title": "Feed Streams", "bot_path": "feeds"})
 
-  def validate(self, url):
-    feed = feedparser.parse(stream.url)
-    # Check bozo first
-    #Content-Type: text/xml; charset=UTF-8
-    #<link rel="alternate" type="application/rss+xml" title="RSS" href="http://www.readwriteweb.com/rss.xml" /> 
-    
   def new(self):
     """Display new bot form"""
-    form = StreamBotForm(instance=None)
+    form = FeedBotForm(instance=None)
     self.generate('stream_form.html', {"form": form, "bot_path": "feeds"})
 
   def create(self):
     """Create new instance of bot"""
-    form = StreamBotForm(data=self.request.POST)
+    form = FeedBotForm(data=self.request.POST)
     if form.is_valid():
       entity = form.save(commit=False)
-      entity._key_name = "z%s" % entity.stream_id
-      entity.put()
+      feed_url = self._find_url_for_feed(entity.url)
+      if feed_url:
+        entity.url = feed_url
+        entity._key_name = "z%s" % entity.stream_id
+        entity.put()
+        
+        # queue cron
+        taskqueue.add(url='/feeds/cron', params={})
+        
+        self.response.headers['Content-Type'] = "application/json"
+        self.response.out.write('{"status": "success", "message": "stream created"}')
+        return
       
-      # queue cron
-      taskqueue.add(url='/feeds/cron', params={})
-      
-      self.response.headers['Content-Type'] = "application/json"
-      self.response.out.write('{"status": "success", "message": "stream created"}')
-    else:
-      webapp.RequestHandler.error(self, 400)
-      self.response.headers['Content-Type'] = "application/json"
-      self.response.out.write('{"status": "failed", "message": "stream was not created"}')
+    webapp.RequestHandler.error(self, 400)
+    self.response.headers['Content-Type'] = "application/json"
+    self.response.out.write('{"status": "failed", "message": "stream was not created"}')
+    return
 
   def update(self, stream_id):
     """Update the feed properties"""
@@ -143,6 +143,15 @@ class FeedBot(Watchbot):
     self.response.out.write("stream updated")
     return
 
+  def _find_url_for_feed(self, url):
+    """Validate that the URl is a real feed, or try to find the feed if not"""
+    if feedfinder.isFeed(url):
+      return url
+    feed_url = feedfinder.feed(url)
+    if feed_url:
+        return feed_url
+    return None
+    
   def _parse_feed(self, stream):
     """Helper method to handle conditional HTTP stuff"""
     if stream.http_etag is not None and len(stream.http_etag) > 0 and stream.http_last_modified is not None:
@@ -201,7 +210,7 @@ class FeedBot(Watchbot):
     #logging.debug(result.content)
 
 
-class StreamBotForm(djangoforms.ModelForm):
+class FeedBotForm(djangoforms.ModelForm):
   class Meta:
     model = models.FeedStream
     exclude = ['format','http_status','http_last_modified','http_etag','last_polled']
