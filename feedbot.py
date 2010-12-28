@@ -187,7 +187,6 @@ class FeedBot(Watchbot):
 
     item_exists = stream.items.filter('id =', id).get()
     if item_exists is None:
-      
       feeditem = models.FeedItem(stream=stream,
                                  id=id,
                                  title=entry['title'],
