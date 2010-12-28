@@ -170,6 +170,7 @@ class FeedBot(Watchbot):
     published = None
     updated = None
     author = None
+    description = None
     if 'published' in entry:
       published = datetime(*entry.published_parsed[:6])
     if 'updated' in entry:
@@ -178,14 +179,20 @@ class FeedBot(Watchbot):
       id = entry['id']
     if 'author' in entry:
       author = entry['author']
+    # Per RSS spec, at least one of title or description must be present.
+    if 'description' in entry:
+      description = entry['description']
+    else:
+      description = entry['title']
 
     item_exists = stream.items.filter('id =', id).get()
     if item_exists is None:
+      
       feeditem = models.FeedItem(stream=stream,
                                  id=id,
                                  title=entry['title'],
                                  url=entry['link'],
-                                 summary=entry['description'],
+                                 summary=description,
                                  author=author,
                                  published=published,
                                  updated=updated)
