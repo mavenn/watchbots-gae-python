@@ -32,7 +32,7 @@ class FeedBot(Watchbot):
   
   def list(self):
     """List the streams created for this bot"""
-    streams = models.FeedStream.all().fetch(20)
+    streams = models.FeedStream.all().fetch(100)
     self.generate('streams.html', {"streams": streams, "title": "Feed Streams", "bot_path": "feeds"})
 
   def new(self):
@@ -48,6 +48,7 @@ class FeedBot(Watchbot):
       feed_url = self._find_url_for_feed(entity.url)
       if feed_url:
         entity.url = feed_url
+        entity.deleted = False
         entity._key_name = "z%s" % entity.stream_id
         entity.put()
         
@@ -78,6 +79,19 @@ class FeedBot(Watchbot):
     
     self.response.headers['Content-Type'] = "application/json"
     self.response.out.write('{"status": "success", "message": "stream updated"}')
+
+  def remove(self, stream_id):
+    """Override this to handle stream deletes"""  
+    self.response.headers['Content-Type'] = "application/json"
+    stream = self.get_stream(stream_id)
+    if stream is None:
+      webapp.RequestHandler.error(self, 404)
+      self.response.out.write('{"status": "failed", "message": "stream not found"}')
+    else:
+      stream.deleted = True
+      stream.put()
+      self.response.out.write('{"status": "success", "message": "stream deleted"}')
+    return
 
   def get_stream(self, stream_id):
     return models.FeedStream.get_by_key_name("z%s" % stream_id)    
@@ -110,7 +124,7 @@ class FeedBot(Watchbot):
 
   def cron(self):
     """Action to take when cron invokes this bot"""
-    stream = models.FeedStream.all().order('last_polled').get()
+    stream = models.FeedStream.all().filter('deleted = ', False).order('last_polled').get()
 
     max_age = datetime.utcnow() - timedelta(minutes=15)
     if stream.last_polled >= max_age:
@@ -153,17 +167,22 @@ class FeedBot(Watchbot):
     return None
     
   def _parse_feed(self, stream):
-    """Helper method to handle conditional HTTP stuff"""
-    if stream.http_etag is not None and len(stream.http_etag) > 0 and stream.http_last_modified is not None:
-      # give feedparser back what it pulled originally, a time.struct_time object
-      return feedparser.parse(stream.url, etag=stream.http_etag, modified=stream.http_last_modified.timetuple())
-    if stream.http_etag is not None and len(stream.http_etag) > 0:
-      return feedparser.parse(stream.url, etag=stream.http_etag)
-    if stream.http_last_modified is not None:
-      # give feedparser back what it pulled originally, a time.struct_time object
-      return feedparser.parse(stream.url, modified=stream.http_last_modified.timetuple())
-    else:
-      return feedparser.parse(stream.url)
+    try:
+      """Helper method to handle conditional HTTP stuff"""
+      logging.debug("Requesting Feed for: %s" % stream.url)
+      if stream.http_etag is not None and len(stream.http_etag) > 0 and stream.http_last_modified is not None:
+        # give feedparser back what it pulled originally, a time.struct_time object
+        return feedparser.parse(stream.url, etag=stream.http_etag, modified=stream.http_last_modified.timetuple())
+      if stream.http_etag is not None and len(stream.http_etag) > 0:
+        return feedparser.parse(stream.url, etag=stream.http_etag)
+      if stream.http_last_modified is not None:
+        # give feedparser back what it pulled originally, a time.struct_time object
+        return feedparser.parse(stream.url, modified=stream.http_last_modified.timetuple())
+      else:
+        return feedparser.parse(stream.url)
+    except UnicodeDecodeError:
+        logging.error("Unicode error parsing feed: %s" % stream.url)
+        return None
 
   def _process_entry(self, entry, stream):
     id = None
@@ -219,7 +238,7 @@ class FeedBot(Watchbot):
 class FeedBotForm(djangoforms.ModelForm):
   class Meta:
     model = models.FeedStream
-    exclude = ['format','http_status','http_last_modified','http_etag','last_polled']
+    exclude = ['format','http_status','http_last_modified','http_etag','last_polled','deleted']
 
 
 def main():
