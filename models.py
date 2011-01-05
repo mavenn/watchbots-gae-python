@@ -18,6 +18,7 @@ class FeedStream(db.Model):
   http_last_modified = db.DateTimeProperty()
   http_etag = db.StringProperty()
   last_polled = db.DateTimeProperty(default=datetime.datetime(1900,1,1))
+  deleted = db.BooleanProperty()
   created = db.DateTimeProperty(auto_now_add=True)
   updated = db.DateTimeProperty(auto_now=True)
 
