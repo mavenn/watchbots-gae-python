@@ -32,7 +32,7 @@ class FeedBot(Watchbot):
   
   def list(self):
     """List the streams created for this bot"""
-    streams = models.FeedStream.all().fetch(100)
+    streams = models.FeedStream.all().filter('deleted =', False).fetch(100)
     self.generate('streams.html', {"streams": streams, "title": "Feed Streams", "bot_path": "feeds"})
 
   def new(self):
@@ -58,7 +58,8 @@ class FeedBot(Watchbot):
         self.response.headers['Content-Type'] = "application/json"
         self.response.out.write('{"status": "success", "message": "stream created"}')
         return
-      
+    
+    logging.warn("feed failed to be created: %s" % self.request.POST.get('url'))  
     webapp.RequestHandler.error(self, 400)
     self.response.headers['Content-Type'] = "application/json"
     self.response.out.write('{"status": "failed", "message": "stream was not created"}')
