@@ -6,14 +6,15 @@ from datetime import datetime, timedelta
 
 # AppEngine imports
 import wsgiref.handlers
-from google.appengine.ext import webapp
+from google.appengine.api import memcache
+from google.appengine.api import taskqueue
+from google.appengine.api import urlfetch
 from google.appengine.ext import db
 from google.appengine.ext import deferred
+from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp import util
 from google.appengine.ext.db import djangoforms
-from google.appengine.api import urlfetch
-from google.appengine.api import taskqueue
 from django.template import TemplateDoesNotExist
 from django.utils import simplejson
 
@@ -42,18 +43,19 @@ class FeedBot(Watchbot):
 
   def create(self):
     """Create new instance of bot"""
-    form = FeedBotForm(data=self.request.POST)
-    if form.is_valid():
-      entity = form.save(commit=False)
+    streamform = FeedBotForm(data=self.request.POST)
+    if streamform.is_valid():
+      entity = streamform.save(commit=False)
       feed_url = self._find_url_for_feed(entity.url)
       if feed_url:
         entity.url = feed_url
         entity.deleted = False
         entity._key_name = "z%s" % entity.stream_id
         entity.put()
-        
+
+        # if feed poller is running it will pick it up next
         # queue cron
-        taskqueue.add(url='/feeds/cron', params={})
+        #taskqueue.add(url='/feeds/cron', params={})
         
         self.response.headers['Content-Type'] = "application/json"
         self.response.out.write('{"status": "success", "message": "stream created"}')
@@ -124,39 +126,25 @@ class FeedBot(Watchbot):
     return activity
 
   def cron(self):
-    """Action to take when cron invokes this bot"""
-    stream = models.FeedStream.all().filter('deleted = ', False).order('last_polled').get()
+    """Wake up the feed poller"""
+    is_enabled = memcache.get("feed_poller_enabled")
+    if is_enabled is None or is_enabled == False:
+      logging.debug("feed poller not enabled")
+      self.response.out.write("feed poller not enabled")
+      return
 
-    max_age = datetime.utcnow() - timedelta(minutes=15)
-    if stream.last_polled >= max_age:
-        self.response.out.write("not stale enough")
-        return
+    is_running = memcache.get("feed_poller_running")
+    if is_running is not None and is_running == True:
+      logging.debug("feed poller already running")
+      self.response.out.write("feed poller already running")
+      return
 
-    d = self._parse_feed(stream)
-
-    # process items
-    to_put = []
-    for entry in d['entries']:
-      item = self._process_entry(entry, stream)
-      if item is not None:
-        to_put.append(item)
-
-    # persist new items
-    if len(to_put) > 0:
-      db.put(to_put)
-      self.update_mavenn_activity(stream.stream_id, to_put)
-
-    # update stream
-    if 'status' in d:
-      stream.http_status = str(d.status)
-      if 'modified' in d:
-        stream.http_last_modified = datetime(*d.modified[:6])
-      if 'etag' in d:
-        stream.http_etag = d.etag
-    stream.last_polled = datetime.utcnow()
-    stream.put()
-    self.response.out.write("stream updated")
-    return
+    # Queue the poller    
+    if not memcache.set("feed_poller_running", True):
+      logging.error("memcache set failed")
+    task = taskqueue.Task(url='/feedpoller/tasks/poll', params={}).add(queue_name="feed-poller")
+    logging.debug("woke up the feed poller")
+    self.response.out.write("woke up the feed poller")
 
   def _find_url_for_feed(self, url):
     """Validate that the URl is a real feed, or try to find the feed if not"""
@@ -167,76 +155,9 @@ class FeedBot(Watchbot):
         return feed_url
     return None
     
-  def _parse_feed(self, stream):
-    try:
-      """Helper method to handle conditional HTTP stuff"""
-      logging.debug("Requesting Feed for: %s" % stream.url)
-      if stream.http_etag is not None and len(stream.http_etag) > 0 and stream.http_last_modified is not None:
-        # give feedparser back what it pulled originally, a time.struct_time object
-        return feedparser.parse(stream.url, etag=stream.http_etag, modified=stream.http_last_modified.timetuple())
-      if stream.http_etag is not None and len(stream.http_etag) > 0:
-        return feedparser.parse(stream.url, etag=stream.http_etag)
-      if stream.http_last_modified is not None:
-        # give feedparser back what it pulled originally, a time.struct_time object
-        return feedparser.parse(stream.url, modified=stream.http_last_modified.timetuple())
-      else:
-        return feedparser.parse(stream.url)
-    except UnicodeDecodeError:
-        logging.error("Unicode error parsing feed: %s" % stream.url)
-        return None
-
-  def _process_entry(self, entry, stream):
-    id = None
-    published = None
-    updated = None
-    author = None
-    description = None
-    if 'published' in entry:
-      published = datetime(*entry.published_parsed[:6])
-    if 'updated' in entry:
-      updated = datetime(*entry.updated_parsed[:6])
-    if 'id' in entry:
-      id = entry['id']
-    if 'author' in entry:
-      author = entry['author']
-    # Per RSS spec, at least one of title or description must be present.
-    if 'description' in entry:
-      description = entry['description']
-    else:
-      description = entry['title']
-
-    item_exists = stream.items.filter('id =', id).get()
-    if item_exists is None:
-      feeditem = models.FeedItem(stream=stream,
-                                 id=id,
-                                 title=entry['title'],
-                                 url=entry['link'],
-                                 summary=description,
-                                 author=author,
-                                 published=published,
-                                 updated=updated)
-      return feeditem
-    return None
-
-  def update_mavenn_activity(self, stream_id, items):
-    mavenn_activity_update = {"status": "active", "stream_id": stream_id}
-    activities = []
-    for item in items:
-      activities.append(item.to_activity())
-    mavenn_activity_update["activity"] = activities
-    activity = simplejson.dumps(mavenn_activity_update)
-    
-    url = "http://mavenn.com/2010-10-17/streams/%s/activity" % stream_id
-    pair = "%s:%s" % (FEEDBOT_MAVENN_API_KEY, FEEDBOT_MAVENN_AUTH_TOKEN)
-    token = base64.b64encode(pair)
-    headers = {"Content-Type": "application/json", "Authorization": "Basic %s" % token}
-    result = urlfetch.fetch(url, payload=activity, method=urlfetch.POST,headers=headers)
-    logging.debug(result.status_code)
-    logging.debug(result.headers)
-    #logging.debug(result.content)
-
 
 class FeedBotForm(djangoforms.ModelForm):
+  """Class for use with django forms module"""
   class Meta:
     model = models.FeedStream
     exclude = ['format','http_status','http_last_modified','http_etag','last_polled','deleted']

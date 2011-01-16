@@ -37,6 +37,10 @@ handlers:
 # - url: /samplebot
 #   script: samplebot.py
 
+- url: /feedpoller/.*
+  script: feedpoller.py
+  login: admin
+
 - url: /feeds
   script: feedbot.py
 

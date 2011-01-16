@@ -3,7 +3,11 @@ cron:
 #  url: /samplebot/cron
 #  schedule: every 10 minutes
 
+# Wake up the feed poller
 - description: Update Feeds
   url: /feeds/cron
-  schedule: every 2 minutes
+  schedule: every 10 minutes
 
+#- description: Delete Feed items for deleted feed
+#  url: /feeds/cleanup
+#  schedule: every 1 hour
