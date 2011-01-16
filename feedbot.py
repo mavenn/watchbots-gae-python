@@ -53,9 +53,8 @@ class FeedBot(Watchbot):
         entity._key_name = "z%s" % entity.stream_id
         entity.put()
 
-        # if feed poller is running it will pick it up next
         # queue cron
-        #taskqueue.add(url='/feeds/cron', params={})
+        taskqueue.add(url='/feeds/cron', params={})
         
         self.response.headers['Content-Type'] = "application/json"
         self.response.out.write('{"status": "success", "message": "stream created"}')

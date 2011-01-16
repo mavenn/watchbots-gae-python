@@ -104,11 +104,13 @@ class FeedPoller(webapp.RequestHandler):
         return None
 
   def process_entry(self, entry, feed):
+    """Prepare and save the entry"""
     id = None
     published = None
     updated = None
     author = None
     description = None
+    
     if 'published' in entry:
       published = datetime(*entry.published_parsed[:6])
     if 'updated' in entry:
@@ -148,7 +150,7 @@ class FeedPoller(webapp.RequestHandler):
     pair = "%s:%s" % (FEEDBOT_MAVENN_API_KEY, FEEDBOT_MAVENN_AUTH_TOKEN)
     token = base64.b64encode(pair)
     headers = {"Content-Type": "application/json", "Authorization": "Basic %s" % token}
-    #result = urlfetch.fetch(url, payload=activity, method=urlfetch.POST,headers=headers)
+    result = urlfetch.fetch(url, payload=activity, method=urlfetch.POST,headers=headers)
     logging.debug(result.status_code)
     logging.debug(result.headers)
     #logging.debug(result.content)
