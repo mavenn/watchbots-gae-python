@@ -2,13 +2,12 @@
 import os
 import base64
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # AppEngine imports
 import wsgiref.handlers
 from google.appengine.api import memcache
 from google.appengine.api import taskqueue
-from google.appengine.api import urlfetch
 from google.appengine.ext import db
 from google.appengine.ext import deferred
 from google.appengine.ext import webapp
