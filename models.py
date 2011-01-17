@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """App Engine data model (schema) ."""
 
 # Python imports
@@ -19,6 +21,8 @@ class FeedStream(db.Model):
   http_etag = db.StringProperty()
   last_polled = db.DateTimeProperty(default=datetime.datetime(1900,1,1))
   deleted = db.BooleanProperty()
+  pshb_is_subscribed = db.BooleanProperty()
+  verify_token = db.StringProperty()  # Random verification token.
   created = db.DateTimeProperty(auto_now_add=True)
   updated = db.DateTimeProperty(auto_now=True)
 

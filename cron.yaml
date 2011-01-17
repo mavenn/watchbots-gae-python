@@ -6,7 +6,7 @@ cron:
 # Wake up the feed poller
 - description: Update Feeds
   url: /feeds/cron
-  schedule: every 10 minutes
+  schedule: every 30 minutes
 
 #- description: Delete Feed items for deleted feed
 #  url: /feeds/cleanup

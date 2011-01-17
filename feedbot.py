@@ -1,7 +1,10 @@
+#!/usr/bin/env python
+
 # Python imports
 import os
 import base64
 import logging
+import uuid
 from datetime import datetime
 
 # AppEngine imports
@@ -44,16 +47,25 @@ class FeedBot(Watchbot):
     """Create new instance of bot"""
     streamform = FeedBotForm(data=self.request.POST)
     if streamform.is_valid():
-      entity = streamform.save(commit=False)
-      feed_url = self._find_url_for_feed(entity.url)
+      # shortcut to instantiate entity from form
+      feed = streamform.save(commit=False)
+      
+      # Find the best url (i.e. if a non-feed url passed in, find the feed)
+      feed_url = self._find_url_for_feed(feed.url)
       if feed_url:
-        entity.url = feed_url
-        entity.deleted = False
-        entity._key_name = "z%s" % entity.stream_id
-        entity.put()
+        feed.url = feed_url
+        feed.deleted = False
+        feed.pshb_is_subscribed = False
+        feed.verify_token = str(uuid.uuid4())
+        feed._key_name = "z%s" % feed.stream_id
+        feed.put()
 
-        # queue cron
+        # queue cron to get an inital fetch of the feed ASAP
         taskqueue.add(url='/feeds/cron', params={})
+        
+        # attempt to subscribe to feed via PubSubHubBub
+        taskqueue.add(url='/subscriber/subscribe', params={"key":str(feed.key())})
+        #key().name()
         
         self.response.headers['Content-Type'] = "application/json"
         self.response.out.write('{"status": "success", "message": "stream created"}')
@@ -91,6 +103,7 @@ class FeedBot(Watchbot):
     else:
       stream.deleted = True
       stream.put()
+      #TODO: unsubscribe from PubSubHubBub
       self.response.out.write('{"status": "success", "message": "stream deleted"}')
     return
 
@@ -158,7 +171,7 @@ class FeedBotForm(djangoforms.ModelForm):
   """Class for use with django forms module"""
   class Meta:
     model = models.FeedStream
-    exclude = ['format','http_status','http_last_modified','http_etag','last_polled','deleted']
+    exclude = ['format','http_status','http_last_modified','http_etag','last_polled','deleted','pshb_is_subscribed','verify_token']
 
 
 def main():

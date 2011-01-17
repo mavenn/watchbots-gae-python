@@ -41,6 +41,9 @@ handlers:
   script: feedpoller.py
   login: admin
 
+- url: /subscriber/.*
+  script: subscriber.py
+
 - url: /feeds
   script: feedbot.py
 
