@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-
 """PubSubHubBub Subscriber implementation
 
 Inital implementation based on Nick Johnson's post:
@@ -34,6 +33,8 @@ class SubscriberHandler(webapp.RequestHandler):
       self.response.out.write('no hub found')
     else:
       logging.info("sending pshb subscription request for: %s" % feed.url)
+      feed.pshb_hub_url = hub_url
+      feed.put()
       self.subscribe_to_topic(feed, hub_url)
       self.response.out.write('sent subscription request')
 
@@ -49,7 +50,7 @@ class SubscriberHandler(webapp.RequestHandler):
         'hub.mode': 'subscribe',
         'hub.topic': feed.url,
         'hub.verify': 'async',
-        'hub.verify_token': feed.verify_token,
+        'hub.verify_token': feed.pshb_verify_token,
     }
     headers = {}
     response = urlfetch.fetch(hub_url, payload=urllib.urlencode(subscribe_args),
@@ -76,7 +77,7 @@ class CallbackHandler(webapp.RequestHandler):
     logging.info("pshb topic subscription callback for %s" % topic)
     
     feed = models.FeedStream.all().filter('url = ', topic).get()
-    if not feed or feed.verify_token != self.request.GET['hub.verify_token']:
+    if not feed or feed.pshb_verify_token != self.request.GET['hub.verify_token']:
       logging.warn("no feed found for pshb topic subscription callback with url: %s" % topic)
       self.error(400)
       return
@@ -108,7 +109,7 @@ def find_self_url(links):
     if link.rel == 'self':
       return link.href
   return None    
-    
+
 
 def main():
   logging.getLogger().setLevel(logging.DEBUG)
