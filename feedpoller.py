@@ -31,6 +31,18 @@ from config import *
 class FeedPoller(webapp.RequestHandler):
   """Class that encapsulates the feed poller functions"""
   def post(self):
+    # allow single feed to be updated
+    key = self.request.get("key")
+    if key is not None and len(key) > 0:
+      feed = models.FeedStream.get(db.Key(key))
+      if feed is None:
+        self.response.out.write("no feed to update")
+        return
+      self.update_feed(feed)
+      self.response.out.write("feed updated")
+      return
+
+    # no key do the recursive polling
     is_enabled = memcache.get("feed_poller_enabled")
     if is_enabled is None or is_enabled == False:
       logging.info("feed poller not enabled shutting down")

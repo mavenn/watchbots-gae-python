@@ -60,12 +60,12 @@ class FeedBot(Watchbot):
         feed._key_name = "z%s" % feed.stream_id
         feed.put()
 
-        # queue cron to get an inital fetch of the feed ASAP
-        taskqueue.add(url='/feeds/cron', params={})
+        # get an inital fetch of the feed ASAP
+        taskqueue.add(url='/feedpoller/tasks/poll', params={"key":str(feed.key())})
+        #key().name()
         
         # attempt to subscribe to feed via PubSubHubBub
         taskqueue.add(url='/subscriber/subscribe', params={"key":str(feed.key())})
-        #key().name()
         
         self.response.headers['Content-Type'] = "application/json"
         self.response.out.write('{"status": "success", "message": "stream created"}')
