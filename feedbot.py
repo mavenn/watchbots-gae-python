@@ -56,7 +56,7 @@ class FeedBot(Watchbot):
         feed.url = feed_url
         feed.deleted = False
         feed.pshb_is_subscribed = False
-        feed.verify_token = str(uuid.uuid4())
+        feed.pshb_verify_token = str(uuid.uuid4())
         feed._key_name = "z%s" % feed.stream_id
         feed.put()
 
@@ -171,7 +171,7 @@ class FeedBotForm(djangoforms.ModelForm):
   """Class for use with django forms module"""
   class Meta:
     model = models.FeedStream
-    exclude = ['format','http_status','http_last_modified','http_etag','last_polled','deleted','pshb_is_subscribed','verify_token']
+    exclude = ['format','http_status','http_last_modified','http_etag','last_polled','deleted','pshb_is_subscribed','verify_token','pshb_hub_url','pshb_verify_token']
 
 
 def main():
