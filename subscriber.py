@@ -39,8 +39,13 @@ class SubscriberHandler(webapp.RequestHandler):
       self.response.out.write('sent subscription request')
 
   def get_hub_url(self, feed):
-    # try to extract it too
-    return 'http://pubsubhubbub.appspot.com/subscribe'
+    """Extract hub url from feed"""
+    feed = feedparser.parse(feed.url)
+    if "links" in feed.feed:
+      for link in feed.feed.links:
+        if "rel" in link and link.rel == "hub":
+          return link.href
+    return None
 
   def subscribe_to_topic(self, feed, hub_url):
     callback_url = urlparse.urljoin(self.request.url, '/subscriber/callback')
