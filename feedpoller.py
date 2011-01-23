@@ -158,7 +158,7 @@ class FeedPoller(webapp.RequestHandler):
     mavenn_activity_update["activity"] = activities
     activity = simplejson.dumps(mavenn_activity_update)
     
-    url = "http://mavenn.com/2010-10-17/streams/%s/activity" % stream_id
+    url = MAVENN_API_URL % stream_id
     pair = "%s:%s" % (FEEDBOT_MAVENN_API_KEY, FEEDBOT_MAVENN_AUTH_TOKEN)
     token = base64.b64encode(pair)
     headers = {"Content-Type": "application/json", "Authorization": "Basic %s" % token}
