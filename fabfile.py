@@ -42,6 +42,7 @@ def version(version):
     env.version = version
 
 def run():
+    local("cp config.dev.py config.py")
     local("%s %s --port 8080  --use_sqlite %s" % (PYTHON, APPENGINE_DEV_APPSERVER, env.gae_src), capture=False)
 
 def deploy(tag=None):
