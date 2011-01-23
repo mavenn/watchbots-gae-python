@@ -1,10 +1,7 @@
 # specific directories
 
 # config/generated files
-config.py
-config.stage.py
-config.prod.py
-config.dev.py
+config.*.py
 
 # hidden files
 
