@@ -2,6 +2,8 @@
 
 # config/generated files
 config.py
+config.stage.py
+config.prod.py
 
 # hidden files
 
