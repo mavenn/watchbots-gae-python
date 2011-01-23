@@ -15,9 +15,10 @@ APPENGINE_APP_CFG = "/opt/google/google_appengine/appcfg.py"
 PYTHON = "/usr/bin/python2.5"
 
 #default values
-env.version = "staging"
+env.gae_application = "staging"
 env.gae_email = ""
 env.gae_src = "./"
+env.config_file_to_swap = "config.stage.py"
 
 def hello():
     print("Hello world!")
@@ -28,12 +29,14 @@ def test():
     
 def staging():
     """Sets the deployment target to staging."""
-    env.version = "staging"
+    env.config_file_to_swap = "config.stage.py"
+    env.gae_application = "staging"
     pass
 
 def production():
     """Sets the deployment target to production."""
-    env.version = "feedstreams"
+    env.config_file_to_swap = "config.prod.py"
+    env.gae_application = "feedstreams"
     
 def version(version):
     env.version = version
@@ -43,8 +46,12 @@ def run():
 
 def deploy(tag=None):
     prepare_deploy(tag)
-    local('%s %s -A %s --email=%s update %s' % (PYTHON, APPENGINE_APP_CFG, env.version, env.gae_email, env.gae_src), capture=False)
+    local('%s %s -A %s --email=%s update %s' % (PYTHON, APPENGINE_APP_CFG, env.gae_application, env.gae_email, env.gae_src), capture=False)
     end_deploy()
 
 def prepare_deploy(tag=None):
-    x = 5
+    local("cp %s config.py" % (env.config_file_to_swap))
+
+def end_deploy():
+    """Clean up after deployment"""
+    local("git checkout config.py")
