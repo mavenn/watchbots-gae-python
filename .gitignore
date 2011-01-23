@@ -4,6 +4,7 @@
 config.py
 config.stage.py
 config.prod.py
+config.dev.py
 
 # hidden files
 
