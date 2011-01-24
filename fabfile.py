@@ -15,7 +15,7 @@ APPENGINE_APP_CFG = "/opt/google/google_appengine/appcfg.py"
 PYTHON = "/usr/bin/python2.5"
 
 #default values
-env.gae_application = "staging"
+env.gae_application = "feedstreams-stage"
 env.gae_email = ""
 env.gae_src = "./"
 env.config_file_to_swap = "config.stage.py"
@@ -30,7 +30,7 @@ def test():
 def staging():
     """Sets the deployment target to staging."""
     env.config_file_to_swap = "config.stage.py"
-    env.gae_application = "staging"
+    env.gae_application = "feedstreams-stage"
     pass
 
 def production():
