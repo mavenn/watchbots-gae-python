@@ -27,6 +27,10 @@ class FeedStream(db.Model):
   pshb_is_subscribed = db.BooleanProperty()
   created = db.DateTimeProperty(auto_now_add=True)
   updated = db.DateTimeProperty(auto_now=True)
+  
+  @classmethod
+  def get_by_url(cls, url):
+    return cls.all().filter('url =', url).get()
 
 
 class FeedItem(db.Model):
@@ -58,3 +62,39 @@ class FeedItem(db.Model):
       "actor": {"person": self.author}
       }
     return activity
+
+  @classmethod
+  def process_entry(cls, entry, feed):
+    """Prepare and save the entry"""
+    id = None
+    published = None
+    updated = None
+    author = None
+    description = None
+    
+    if 'published' in entry:
+      published = datetime(*entry.published_parsed[:6])
+    if 'updated' in entry:
+      updated = datetime(*entry.updated_parsed[:6])
+    if 'id' in entry:
+      id = entry['id']
+    if 'author' in entry:
+      author = entry['author']
+    # Per RSS spec, at least one of title or description must be present.
+    if 'description' in entry:
+      description = entry['description']
+    else:
+      description = entry['title']
+
+    item_exists = feed.items.filter('id =', id).get()
+    if item_exists is None:
+      feeditem = cls(stream=feed,
+                                 id=id,
+                                 title=entry['title'],
+                                 url=entry['link'],
+                                 summary=description,
+                                 author=author,
+                                 published=published,
+                                 updated=updated)
+      return feeditem
+    return None

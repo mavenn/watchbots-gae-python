@@ -19,14 +19,16 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
 from django.utils import simplejson
 
-import models
 from lib import feedparser
+
+from models import FeedStream, FeedItem
+from config import *
 
 
 class SubscriberHandler(webapp.RequestHandler):
   """Handler to process new feed subscriptions"""
   def post(self):
-    feed = models.FeedStream.get(db.Key(self.request.POST.get("key")))
+    feed = FeedStream.get(db.Key(self.request.POST.get("key")))
     hub_url = self.get_hub_url(feed)
     if hub_url is None:
       logging.info("no hub found for: %s" % feed.url)
@@ -69,45 +71,78 @@ class SubscriberHandler(webapp.RequestHandler):
 class CallbackHandler(webapp.RequestHandler):
   """Handler for subscription and update callbacks"""
   def get(self):
-    if self.request.GET['hub.mode'] == 'unsubscribe':
+    mode = self.request.GET['hub.mode']
+    topic = self.request.GET['hub.topic']
+    challenge = self.request.GET['hub.challenge']
+    verify_token = self.request.GET['hub.verify_token']
+    
+    feedstream = FeedStream.get_by_url(topic)
+
+    if mode == 'unsubscribe':
+      logging.info("pshb unsubscribe callback for %s" % topic)
+      if feedstream is not None:
+        feed.pshb_is_subscribed = False
+        feed.put()
       self.response.headers['Content-Type'] = 'text/plain'
-      self.response.out.write(self.request.GET['hub.challenge'])
+      self.response.out.write(challenge)
       return
       
-    if self.request.GET['hub.mode'] != 'subscribe':
+    if mode != 'subscribe':
       self.error(400)
       return
  
-    topic = self.request.GET['hub.topic']
     logging.info("pshb topic subscription callback for %s" % topic)
     
-    feed = models.FeedStream.all().filter('url = ', topic).get()
-    if not feed or feed.pshb_verify_token != self.request.GET['hub.verify_token']:
+    if not feed or feed.pshb_verify_token != verify_token:
       logging.warn("no feed found for pshb topic subscription callback with url: %s" % topic)
       self.error(400)
       return
  
-    # update the feed
     feed.pshb_is_subscribed = True
     feed.put()
-
     self.response.headers['Content-Type'] = 'text/plain'
-    self.response.out.write(self.request.GET['hub.challenge'])
+    self.response.out.write(challenge)
 
   def post(self):
     """Handles new content notifications."""
     logging.debug(self.request.headers)
     logging.debug(self.request.body)
-    #feed = feedparser.parse(self.request.body)
-    #url = find_self_url(feed.feed.links)
-    #feed = models.FeedStream.all().filter('url = ', url).get()
-    #if not feed:
-    #  logging.warn("Discarding update from unknown feed '%s'", url)
-    #  return
-    #for entry in feed.entries:
-    #  message = "%s (%s)" % (entry.title, entry.link)
-    self.response.out.write("ok")
+    feed = feedparser.parse(self.request.body)
+    url = find_self_url(feed.feed.links)
+    feedstream = FeedStream.get_by_url(url)
 
+    if not feedstream:
+      logging.warn("Discarding update from unknown feed '%s'", url)
+      return
+    
+    logging.info("Processing update for known feed '%s'", url)
+    to_put = []
+    for entry in feed.entries:
+      message = "%s (%s)" % (entry.title, entry.link)
+      item = FeedItem.process_entry(entry, feedstream)
+      if item is not None:
+        to_put.append(item)
+    if len(to_put) > 0:
+      db.put(to_put)
+      self.update_mavenn_activity(feedstream.stream_id, to_put)
+
+  def update_mavenn_activity(self, stream_id, items):
+    mavenn_activity_update = {"status": "active", "stream_id": stream_id}
+    activities = []
+    for item in items:
+      activities.append(item.to_activity())
+    mavenn_activity_update["activity"] = activities
+    activity = simplejson.dumps(mavenn_activity_update)
+    
+    url = MAVENN_API_URL % stream_id
+    pair = "%s:%s" % (FEEDBOT_MAVENN_API_KEY, FEEDBOT_MAVENN_AUTH_TOKEN)
+    token = base64.b64encode(pair)
+    headers = {"Content-Type": "application/json", "Authorization": "Basic %s" % token}
+    result = urlfetch.fetch(url, payload=activity, method=urlfetch.POST,headers=headers)
+    logging.debug(result.status_code)
+    logging.debug(result.headers)
+    #logging.debug(result.content)
+    return
 
 def find_self_url(links):
   for link in links:
