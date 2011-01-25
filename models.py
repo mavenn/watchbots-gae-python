@@ -3,8 +3,12 @@
 """App Engine data model (schema) ."""
 
 # Python imports
+import datetime
+import email
+import hashlib
 import logging
-import email, time, datetime
+import random
+import time
 
 # AppEngine imports
 from google.appengine.ext import db
@@ -34,6 +38,10 @@ class FeedStream(db.Model):
 
 
 class FeedItem(db.Model):
+  """An invidual story or item from a feed.
+  
+  Key name will be a hash of the feed source and item ID.
+  """
   stream = db.ReferenceProperty(FeedStream, collection_name='items')
   id = db.StringProperty()
   title = db.StringProperty()
@@ -65,36 +73,36 @@ class FeedItem(db.Model):
 
   @classmethod
   def process_entry(cls, entry, feed):
-    """Prepare and save the entry"""
-    id = None
+    """Prepare the feed entry, converting it to our FeedItem model"""
+    entry_id = None
+    content = None
     published = None
     updated = None
-    author = None
-    description = None
-    
+    link = entry.get('link', '')
+    title = entry.get('title', '')
+    author = entry.get('author', '')
+
+    if hasattr(entry, 'content'):
+      # This is Atom.
+      entry_id = entry.id
+      content = entry.content[0].value
+    else:
+      # Per RSS spec, at least one of title or description must be present.
+      content = (entry.get('description', '') or title)
+      entry_id = (entry.get('id', '') or link or title or content)
+
     if 'published' in entry:
       published = datetime(*entry.published_parsed[:6])
     if 'updated' in entry:
       updated = datetime(*entry.updated_parsed[:6])
-    if 'id' in entry:
-      id = entry['id']
-    if 'author' in entry:
-      author = entry['author']
-    # Per RSS spec, at least one of title or description must be present.
-    if 'description' in entry:
-      description = entry['description']
-    else:
-      description = entry['title']
 
-    item_exists = feed.items.filter('id =', id).get()
-    if item_exists is None:
-      feeditem = cls(stream=feed,
-                                 id=id,
-                                 title=entry['title'],
-                                 url=entry['link'],
-                                 summary=description,
-                                 author=author,
-                                 published=published,
-                                 updated=updated)
-      return feeditem
-    return None
+    feeditem = cls(key_name='z' + hashlib.sha1(link + '\n' + entry_id + '\n' + feed.stream_id).hexdigest(),
+      stream=feed,
+      id=entry_id,
+      title=title,
+      url=link,
+      summary=content,
+      author=author,
+      published=published,
+      updated=updated)
+    return feeditem

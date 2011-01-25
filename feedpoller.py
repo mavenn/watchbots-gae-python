@@ -73,14 +73,13 @@ class FeedPoller(webapp.RequestHandler):
     """Fetch the feed and process new items"""
     d = self.parse_feed(feed)
 
-    # process items
     to_put = []
     for entry in d['entries']:
       item = self.process_entry(entry, feed)
-      if item is not None:
+      item_exists = FeedItem.get_by_key_name(item._key_name)
+      if item_exists is None:
         to_put.append(item)
 
-    # persist new items
     if len(to_put) > 0:
       db.put(to_put)
       self.update_mavenn_activity(feed.stream_id, to_put)

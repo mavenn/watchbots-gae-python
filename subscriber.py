@@ -110,40 +110,60 @@ class CallbackHandler(webapp.RequestHandler):
   def post(self):
     """Handles Content Distribution notifications."""
     logging.debug(self.request.headers)
-    logging.debug(self.request.body)
-    feed = feedparser.parse(self.request.body)
 
+    feed = feedparser.parse(self.request.body)
+    if feed.bozo:
+      logging.error('Bozo feed data. %s: %r',
+                     feed.bozo_exception.__class__.__name__,
+                     feed.bozo_exception)
+      if (hasattr(feed.bozo_exception, 'getLineNumber') and
+          hasattr(feed.bozo_exception, 'getMessage')):
+        line = feed.bozo_exception.getLineNumber()
+        logging.error('Line %d: %s', line, feed.bozo_exception.getMessage())
+        segment = self.request.body.split('\n')[line-1]
+        logging.info('Body segment with error: %r', segment.decode('utf-8'))
+      return self.response.set_status(500)
+
+    feedstream = None
     if "links" in feed.feed:
       url = find_self_url(feed.feed.links)
       feedstream = FeedStream.get_by_url(url)
 
-      if not feedstream:
+      if feedstream is None:
         logging.warn("Discarding update from unknown feed '%s'", url)
         return
 
-      #hub_url = feedstream.pshb_hub_url
-      #for link in feed.feed.links:
-      #  if link['rel'] == 'hub':
-      #    hub_url = link['href']
+    logging.info("Processing update for known feed '%s'", url)
+    logging.info('Found %d entries', len(feed.entries))
 
-      #needs_update = False
-      #if hub_url and feedstream.pshb_hub_url != hub_url:
-      #  # hub URL has changed; let's update our subscription
-      #  needs_update = True
-      # TODO: topic URL has changed
+    to_put = []  # batch datastore updates
+    for entry in feed.entries:
+      #logging.info('Found entry with title = "%s", id = "%s", '
+      #             'link = "%s", content = "%s"',
+      #             title, entry_id, link, content)
+      item = FeedItem.process_entry(entry, feedstream)
+      if item is not None:
+        to_put.append(item)
+    if len(to_put) > 0:
+      db.put(to_put)
+      self.update_mavenn_activity(feedstream.stream_id, to_put)
+
+    self.response.set_status(200)
+    self.response.out.write("ok");
     
-      logging.info("Processing update for known feed '%s'", url)
-      to_put = []
-      for entry in feed.entries:
-        item = FeedItem.process_entry(entry, feedstream)
-        if item is not None:
-          to_put.append(item)
-      if len(to_put) > 0:
-        db.put(to_put)
-        self.update_mavenn_activity(feedstream.stream_id, to_put)
-    
-      # Response headers (body is empty) 
-      # X-Hub-On-Behalf-Of
+    #hub_url = feedstream.pshb_hub_url
+    #for link in feed.feed.links:
+    #  if link['rel'] == 'hub':
+    #    hub_url = link['href']
+
+    #needs_update = False
+    #if hub_url and feedstream.pshb_hub_url != hub_url:
+    #  # hub URL has changed; let's update our subscription
+    #  needs_update = True
+    # TODO: topic URL has changed
+  
+    # Response headers (body is empty) 
+    # X-Hub-On-Behalf-Of
 
   def update_mavenn_activity(self, stream_id, items):
     mavenn_activity_update = {"status": "active", "stream_id": stream_id}
@@ -170,19 +190,20 @@ def find_self_url(links):
   return None    
 
 
-class PHSBCallbackTestHandler(BaseHandler):
-  """"""
+class DebugHandler(webapp.RequestHandler):
+  """Debug handler for simulating events."""
   def get(self):
-    self.generate('pshb-tester.html', {})
-
-  def post(self):
-    content_type = self.request.POST['content_type']
-    contents = self.request.POST['contents']
-    
-    result = urlfetch.fetch(url, payload=activity, method=urlfetch.POST,headers=headers)
-    callback_url = urlparse.urljoin(self.request.url, '/subscriber/callback')
-    
-    
+    self.response.out.write("""
+<html>
+<body>
+<form action="/" method="post">
+  <div>Simulate feed:</div>
+  <textarea name="content" cols="40" rows="40"></textarea>
+  <div><input type="submit" value="submit"></div>
+</form>
+</body>
+</html>
+""")
 
 
 def main():
@@ -190,7 +211,7 @@ def main():
   application = webapp.WSGIApplication([
           (r'/subscriber/subscribe', SubscriberHandler),
           (r'/subscriber/callback', CallbackHandler),
-          (r'/subscriber/tester', PHSBCallbackTestHandler)
+          (r'/subscriber/debug', DebugHandler),
           ], debug=True)
   wsgiref.handlers.CGIHandler().run(application)
 
