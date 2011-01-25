@@ -4,6 +4,9 @@
 
 Inital implementation based on Nick Johnson's post:
 http://blog.notdot.net/2010/02/Consuming-RSS-feeds-with-PubSubHubbub
+
+with additional parts derived from djpubsubhubbub:
+https://bitbucket.org/petersanchez/djpubsubhubbub
 """
 
 import base64
@@ -21,6 +24,7 @@ from django.utils import simplejson
 
 from lib import feedparser
 
+from lib.watchbot import BaseHandler
 from models import FeedStream, FeedItem
 from config import *
 
@@ -104,27 +108,42 @@ class CallbackHandler(webapp.RequestHandler):
     self.response.out.write(challenge)
 
   def post(self):
-    """Handles new content notifications."""
+    """Handles Content Distribution notifications."""
     logging.debug(self.request.headers)
     logging.debug(self.request.body)
     feed = feedparser.parse(self.request.body)
-    url = find_self_url(feed.feed.links)
-    feedstream = FeedStream.get_by_url(url)
 
-    if not feedstream:
-      logging.warn("Discarding update from unknown feed '%s'", url)
-      return
+    if "links" in feed.feed:
+      url = find_self_url(feed.feed.links)
+      feedstream = FeedStream.get_by_url(url)
+
+      if not feedstream:
+        logging.warn("Discarding update from unknown feed '%s'", url)
+        return
+
+      #hub_url = feedstream.pshb_hub_url
+      #for link in feed.feed.links:
+      #  if link['rel'] == 'hub':
+      #    hub_url = link['href']
+
+      #needs_update = False
+      #if hub_url and feedstream.pshb_hub_url != hub_url:
+      #  # hub URL has changed; let's update our subscription
+      #  needs_update = True
+      # TODO: topic URL has changed
     
-    logging.info("Processing update for known feed '%s'", url)
-    to_put = []
-    for entry in feed.entries:
-      message = "%s (%s)" % (entry.title, entry.link)
-      item = FeedItem.process_entry(entry, feedstream)
-      if item is not None:
-        to_put.append(item)
-    if len(to_put) > 0:
-      db.put(to_put)
-      self.update_mavenn_activity(feedstream.stream_id, to_put)
+      logging.info("Processing update for known feed '%s'", url)
+      to_put = []
+      for entry in feed.entries:
+        item = FeedItem.process_entry(entry, feedstream)
+        if item is not None:
+          to_put.append(item)
+      if len(to_put) > 0:
+        db.put(to_put)
+        self.update_mavenn_activity(feedstream.stream_id, to_put)
+    
+      # Response headers (body is empty) 
+      # X-Hub-On-Behalf-Of
 
   def update_mavenn_activity(self, stream_id, items):
     mavenn_activity_update = {"status": "active", "stream_id": stream_id}
@@ -151,11 +170,27 @@ def find_self_url(links):
   return None    
 
 
+class PHSBCallbackTestHandler(BaseHandler):
+  """"""
+  def get(self):
+    self.generate('pshb-tester.html', {})
+
+  def post(self):
+    content_type = self.request.POST['content_type']
+    contents = self.request.POST['contents']
+    
+    result = urlfetch.fetch(url, payload=activity, method=urlfetch.POST,headers=headers)
+    callback_url = urlparse.urljoin(self.request.url, '/subscriber/callback')
+    
+    
+
+
 def main():
   logging.getLogger().setLevel(logging.DEBUG)
   application = webapp.WSGIApplication([
           (r'/subscriber/subscribe', SubscriberHandler),
-          (r'/subscriber/callback', CallbackHandler)
+          (r'/subscriber/callback', CallbackHandler),
+          (r'/subscriber/tester', PHSBCallbackTestHandler)
           ], debug=True)
   wsgiref.handlers.CGIHandler().run(application)
 
