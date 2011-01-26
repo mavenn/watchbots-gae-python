@@ -24,7 +24,7 @@ from lib import feedfinder
 from lib import feedparser
 
 # our own imports
-import models
+from models import FeedStream, FeedItem
 from config import *
 
 
