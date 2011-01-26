@@ -16,7 +16,6 @@ PYTHON = "/usr/bin/python2.5"
 
 #default values
 env.gae_application = "feedstreams-stage"
-env.gae_email = ""
 env.gae_src = "./"
 env.config_file_to_swap = "config.stage.py"
 
@@ -47,7 +46,7 @@ def run():
 
 def deploy(tag=None):
     prepare_deploy(tag)
-    local('%s %s -A %s --email=%s update %s' % (PYTHON, APPENGINE_APP_CFG, env.gae_application, env.gae_email, env.gae_src), capture=False)
+    local('%s %s -A %s update %s' % (PYTHON, APPENGINE_APP_CFG, env.gae_application, env.gae_src), capture=False)
     end_deploy()
 
 def prepare_deploy(tag=None):
