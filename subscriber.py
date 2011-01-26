@@ -61,7 +61,7 @@ class SubscriberHandler(webapp.RequestHandler):
 
   def subscribe_to_topic(self, stream, hub_url):
     """Execute subscription request to the hub"""
-    callback_url = urlparse.urljoin(self.request.url, '/subscriber/callback')
+    callback_url = urlparse.urljoin(self.request.url, '/subscriber/callback/', stream.stream_id)
     logging.info(callback_url)
     subscribe_args = {
         'hub.callback': callback_url,
@@ -80,13 +80,13 @@ class SubscriberHandler(webapp.RequestHandler):
 
 class CallbackHandler(webapp.RequestHandler):
   """Handler for subscription and update callbacks"""
-  def get(self):
+  def get(self, stream_id):
     mode = self.request.GET['hub.mode']
     topic = self.request.GET['hub.topic']
     challenge = self.request.GET['hub.challenge']
     verify_token = self.request.GET['hub.verify_token']
     
-    feedstream = FeedStream.get_by_url(topic)
+    feedstream = FeedStream.get_by_key_name("z%s" % stream_id)
     if feedstream is None:
       logging.warn("feedstream not found in pshb subscription callback: %s" % topic)
       self.error(404)
@@ -112,7 +112,7 @@ class CallbackHandler(webapp.RequestHandler):
     self.response.headers['Content-Type'] = 'text/plain'
     self.response.out.write(challenge)
 
-  def post(self):
+  def post(self, stream_id):
     """Handles Content Distribution notifications."""
     logging.debug(self.request.headers)
 
@@ -129,14 +129,11 @@ class CallbackHandler(webapp.RequestHandler):
         logging.info('Body segment with error: %r', segment.decode('utf-8'))
       return self.response.set_status(500)
 
-    feedstream = None
-    if "links" in feed.feed:
-      url = find_feed_url('self', feed.feed.links)
-      feedstream = FeedStream.get_by_url(url)
-      if feedstream is None:
-        logging.warn("Discarding update from unknown feed '%s'", url)
-        self.error(404)
-        return
+    feedstream = FeedStream.get_by_key_name("z%s" % stream_id)
+    if feedstream is None:
+      logging.warn("Discarding update from unknown feed '%s'", stream_id)
+      self.error(404)
+      return
 
     logging.info("Processing update for feed '%s'", feedstream.url)
     logging.info('Found %d entries', len(feed.entries))
@@ -185,7 +182,7 @@ def main():
   logging.getLogger().setLevel(logging.DEBUG)
   application = webapp.WSGIApplication([
           (r'/subscriber/subscribe', SubscriberHandler),
-          (r'/subscriber/callback', CallbackHandler),
+          (r'/subscriber/callback/(.*)', CallbackHandler),
           ], debug=True)
   wsgiref.handlers.CGIHandler().run(application)
 
