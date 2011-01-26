@@ -5,8 +5,9 @@
 Inital implementation based on Nick Johnson's post:
 http://blog.notdot.net/2010/02/Consuming-RSS-feeds-with-PubSubHubbub
 
-with additional parts derived from djpubsubhubbub:
-https://bitbucket.org/petersanchez/djpubsubhubbub
+with additional parts derived from:
+djpubsubhubbub - https://bitbucket.org/petersanchez/djpubsubhubbub
+PubSubHubBub reference implementation - http://code.google.com/p/pubsubhubbub/
 """
 
 import base64
@@ -30,42 +31,47 @@ from config import *
 
 
 class SubscriberHandler(webapp.RequestHandler):
-  """Handler to process new feed subscriptions"""
+  """Handler to process new feed subscriptions from our callers"""
   def post(self):
-    feed = FeedStream.get(db.Key(self.request.POST.get("key")))
-    hub_url = self.get_hub_url(feed)
-    if hub_url is None:
-      logging.info("no hub found for: %s" % feed.url)
-      self.response.out.write('no hub found')
-    else:
-      logging.info("sending pshb subscription request for: %s" % feed.url)
-      feed.pshb_hub_url = hub_url
-      feed.put()
-      self.subscribe_to_topic(feed, hub_url)
-      self.response.out.write('sent subscription request')
+    stream = FeedStream.get(db.Key(self.request.POST.get("key")))
+    if stream is None:
+      logging.warn("feedstream not found for subscription request")
+      self.response.out.write("feedstream not found for subscription request")
+      self.error(404)
+      return
 
-  def get_hub_url(self, feed):
-    """Extract hub url from feed"""
-    feed = feedparser.parse(feed.url)
-    if "links" in feed.feed:
-      for link in feed.feed.links:
-        if "rel" in link and link.rel == "hub":
-          return link.href
-    return None
+    feed = feedparser.parse(stream.url)
+    if hasattr(feed, 'feed') and hasattr(feed.feed, 'links'):
+      hub_url = find_feed_url('hub', feed.links)
+      if hub_url is None:
+        logging.info("no hub found for: %s" % stream.url)
+        self.response.out.write('no hub found')
+        return
+      else:
+        logging.info("sending pshb subscription request for: %s" % stream.url)
+        stream.pshb_hub_url = hub_url
+        stream.put()
+        self.subscribe_to_topic(stream, hub_url)
+        self.response.out.write('sent subscription request')
+        return
 
-  def subscribe_to_topic(self, feed, hub_url):
+    logging.warn('could not parse feed unable to initiate subscription')
+    self.response.out.write('could not parse feed unable to initiate subscription')
+    self.error(400)
+
+  def subscribe_to_topic(self, stream, hub_url):
+    """Execute subscription request to the hub"""
     callback_url = urlparse.urljoin(self.request.url, '/subscriber/callback')
     logging.info(callback_url)
     subscribe_args = {
         'hub.callback': callback_url,
         'hub.mode': 'subscribe',
-        'hub.topic': feed.url,
+        'hub.topic': stream.url,
         'hub.verify': 'async',
-        'hub.verify_token': feed.pshb_verify_token,
+        'hub.verify_token': stream.pshb_verify_token,
     }
-    headers = {}
     response = urlfetch.fetch(hub_url, payload=urllib.urlencode(subscribe_args),
-                              method=urlfetch.POST, headers=headers)
+                              method=urlfetch.POST, headers={})
     logging.debug(response.status_code)
     logging.debug(response.headers)
     logging.debug(response.content)
@@ -81,29 +87,28 @@ class CallbackHandler(webapp.RequestHandler):
     verify_token = self.request.GET['hub.verify_token']
     
     feedstream = FeedStream.get_by_url(topic)
-
+    if feedstream is None:
+      logging.warn("feedstream not found in pshb subscription callback: %s" % topic)
+      self.error(404)
+      return
     if mode == 'unsubscribe':
       logging.info("pshb unsubscribe callback for %s" % topic)
-      if feedstream is not None:
-        feed.pshb_is_subscribed = False
-        feed.put()
+      feedstream.pshb_is_subscribed = False
+      feedstream.put()
       self.response.headers['Content-Type'] = 'text/plain'
       self.response.out.write(challenge)
       return
-      
     if mode != 'subscribe':
+      logging.warn("pshb mode unknown %s" % mode)
       self.error(400)
       return
- 
+    if feedstream.pshb_verify_token != verify_token:
+      logging.warn("verify token's don't match. topic: %s verify_token: %s" % (topic, verify_token))
+      self.error(400)
+      return
     logging.info("pshb topic subscription callback for %s" % topic)
-    
-    if not feed or feed.pshb_verify_token != verify_token:
-      logging.warn("no feed found for pshb topic subscription callback with url: %s" % topic)
-      self.error(400)
-      return
- 
-    feed.pshb_is_subscribed = True
-    feed.put()
+    feedstream.pshb_is_subscribed = True
+    feedstream.put()
     self.response.headers['Content-Type'] = 'text/plain'
     self.response.out.write(challenge)
 
@@ -126,21 +131,18 @@ class CallbackHandler(webapp.RequestHandler):
 
     feedstream = None
     if "links" in feed.feed:
-      url = find_self_url(feed.feed.links)
+      url = find_feed_url('self', feed.feed.links)
       feedstream = FeedStream.get_by_url(url)
-
       if feedstream is None:
         logging.warn("Discarding update from unknown feed '%s'", url)
+        self.error(404)
         return
 
-    logging.info("Processing update for known feed '%s'", url)
+    logging.info("Processing update for feed '%s'", feedstream.url)
     logging.info('Found %d entries', len(feed.entries))
 
     to_put = []  # batch datastore updates
     for entry in feed.entries:
-      #logging.info('Found entry with title = "%s", id = "%s", '
-      #             'link = "%s", content = "%s"',
-      #             title, entry_id, link, content)
       item = FeedItem.process_entry(entry, feedstream)
       if item is not None:
         to_put.append(item)
@@ -148,22 +150,10 @@ class CallbackHandler(webapp.RequestHandler):
       db.put(to_put)
       self.update_mavenn_activity(feedstream.stream_id, to_put)
 
+    # Response headers (body can be empty) 
+    # X-Hub-On-Behalf-Of
     self.response.set_status(200)
     self.response.out.write("ok");
-    
-    #hub_url = feedstream.pshb_hub_url
-    #for link in feed.feed.links:
-    #  if link['rel'] == 'hub':
-    #    hub_url = link['href']
-
-    #needs_update = False
-    #if hub_url and feedstream.pshb_hub_url != hub_url:
-    #  # hub URL has changed; let's update our subscription
-    #  needs_update = True
-    # TODO: topic URL has changed
-  
-    # Response headers (body is empty) 
-    # X-Hub-On-Behalf-Of
 
   def update_mavenn_activity(self, stream_id, items):
     mavenn_activity_update = {"status": "active", "stream_id": stream_id}
@@ -183,27 +173,12 @@ class CallbackHandler(webapp.RequestHandler):
     #logging.debug(result.content)
     return
 
-def find_self_url(links):
+
+def find_feed_url(linkrel, links):
   for link in links:
-    if link.rel == 'self':
+    if link.rel == linkrel:
       return link.href
-  return None    
-
-
-class DebugHandler(webapp.RequestHandler):
-  """Debug handler for simulating events."""
-  def get(self):
-    self.response.out.write("""
-<html>
-<body>
-<form action="/" method="post">
-  <div>Simulate feed:</div>
-  <textarea name="content" cols="40" rows="40"></textarea>
-  <div><input type="submit" value="submit"></div>
-</form>
-</body>
-</html>
-""")
+  return None
 
 
 def main():
@@ -211,7 +186,6 @@ def main():
   application = webapp.WSGIApplication([
           (r'/subscriber/subscribe', SubscriberHandler),
           (r'/subscriber/callback', CallbackHandler),
-          (r'/subscriber/debug', DebugHandler),
           ], debug=True)
   wsgiref.handlers.CGIHandler().run(application)
 

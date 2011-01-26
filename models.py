@@ -14,6 +14,8 @@ import time
 from google.appengine.ext import db
 from django.utils import simplejson
 
+from lib import feedparser
+
 
 class FeedStream(db.Model):
   stream_id = db.StringProperty(required=True)
@@ -91,12 +93,13 @@ class FeedItem(db.Model):
       content = (entry.get('description', '') or title)
       entry_id = (entry.get('id', '') or link or title or content)
 
-    if 'published' in entry:
+    if hasattr(entry, 'published'):
       published = datetime(*entry.published_parsed[:6])
-    if 'updated' in entry:
+    if hasattr(entry, 'updated'):
       updated = datetime(*entry.updated_parsed[:6])
-
-    feeditem = cls(key_name='z' + hashlib.sha1(link + '\n' + entry_id + '\n' + feed.stream_id).hexdigest(),
+      
+    entry_key_name = 'z' + hashlib.sha1(link + '\n' + entry_id + '\n' + feed.stream_id).hexdigest()
+    feeditem = cls(key_name=entry_key_name,
       stream=feed,
       id=entry_id,
       title=title,
