@@ -27,7 +27,6 @@ class FeedStream(db.Model):
   http_etag = db.StringProperty()
   last_polled = db.DateTimeProperty(default=datetime.datetime(1900,1,1))
   deleted = db.BooleanProperty()
-  verify_token = db.StringProperty()  # Random verification token
   pshb_verify_token = db.StringProperty()  # Random verification token
   pshb_hub_url = db.LinkProperty() # store and track it, in case the publisher moves its hub
   pshb_is_subscribed = db.BooleanProperty()
