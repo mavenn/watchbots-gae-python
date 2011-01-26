@@ -41,7 +41,6 @@ class FeedStream(db.Model):
 
 class FeedItem(db.Model):
   """An invidual story or item from a feed.
-  
   Key name will be a hash of the feed source and item ID.
   """
   stream = db.ReferenceProperty(FeedStream, collection_name='items')
