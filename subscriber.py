@@ -42,7 +42,7 @@ class SubscriberHandler(webapp.RequestHandler):
 
     feed = feedparser.parse(stream.url)
     if hasattr(feed, 'feed') and hasattr(feed.feed, 'links'):
-      hub_url = find_feed_url('hub', feed.links)
+      hub_url = find_feed_url('hub', feed.feed.links)
       if hub_url is None:
         logging.info("no hub found for: %s" % stream.url)
         self.response.out.write('no hub found')
