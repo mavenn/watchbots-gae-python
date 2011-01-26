@@ -34,7 +34,7 @@ class FeedPoller(webapp.RequestHandler):
     # allow single feed to be updated
     key = self.request.get("key")
     if key is not None and len(key) > 0:
-      feed = models.FeedStream.get(db.Key(key))
+      feed = FeedStream.get(db.Key(key))
       if feed is None:
         self.response.out.write("no feed to update")
         return
@@ -50,7 +50,7 @@ class FeedPoller(webapp.RequestHandler):
       return
 
     # Get the stalest feed
-    feed = models.FeedStream.all().filter('deleted = ', False).order('last_polled').get()
+    feed = FeedStream.all().filter('deleted = ', False).order('last_polled').get()
 
     # Check how stale the stalest feed is, if it's been updated in the
     # last 10 minutes, we should take a break
