@@ -75,7 +75,7 @@ class FeedPoller(webapp.RequestHandler):
 
     to_put = []
     for entry in d['entries']:
-      item = self.process_entry(entry, feed)
+      item = FeedItem.process_entry(entry, feed)
       item_exists = FeedItem.get_by_key_name(item._key_name)
       if item_exists is None:
         to_put.append(item)
@@ -84,13 +84,13 @@ class FeedPoller(webapp.RequestHandler):
       db.put(to_put)
       self.update_mavenn_activity(feed.stream_id, to_put)
 
-    # update stream
-    if 'status' in d:
+    # update feedstream properties
+    if hasattr(d, 'status'):
       logging.info(d.status)
       feed.http_status = str(d.status)
-      if 'modified' in d:
+      if hasattr(d, 'modified'):
         feed.http_last_modified = datetime(*d.modified[:6])
-      if 'etag' in d:
+      if hasattr(d, 'etag'):
         feed.http_etag = d.etag
     feed.last_polled = datetime.utcnow()
     feed.put()
@@ -113,41 +113,6 @@ class FeedPoller(webapp.RequestHandler):
     except UnicodeDecodeError:
         logging.error("Unicode error parsing feed: %s" % feed.url)
         return None
-
-  def process_entry(self, entry, feed):
-    """Prepare and save the entry"""
-    id = None
-    published = None
-    updated = None
-    author = None
-    description = None
-    
-    if 'published' in entry:
-      published = datetime(*entry.published_parsed[:6])
-    if 'updated' in entry:
-      updated = datetime(*entry.updated_parsed[:6])
-    if 'id' in entry:
-      id = entry['id']
-    if 'author' in entry:
-      author = entry['author']
-    # Per RSS spec, at least one of title or description must be present.
-    if 'description' in entry:
-      description = entry['description']
-    else:
-      description = entry['title']
-
-    item_exists = feed.items.filter('id =', id).get()
-    if item_exists is None:
-      feeditem = models.FeedItem(stream=feed,
-                                 id=id,
-                                 title=entry['title'],
-                                 url=entry['link'],
-                                 summary=description,
-                                 author=author,
-                                 published=published,
-                                 updated=updated)
-      return feeditem
-    return None
 
   def update_mavenn_activity(self, stream_id, items):
     mavenn_activity_update = {"status": "active", "stream_id": stream_id}
