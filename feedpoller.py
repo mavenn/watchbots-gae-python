@@ -76,7 +76,6 @@ class FeedPoller(webapp.RequestHandler):
     to_put = []
     for entry in d['entries']:
       item = FeedItem.process_entry(entry, feed)
-      logging.debug(item._key_name)
       item_exists = FeedItem.get_by_key_name(item._key_name)
       if item_exists is None:
         to_put.append(item)
@@ -88,7 +87,6 @@ class FeedPoller(webapp.RequestHandler):
 
     # update feedstream properties
     if hasattr(d, 'status'):
-      logging.info(d.status)
       feed.http_status = str(d.status)
       if hasattr(d, 'modified'):
         feed.http_last_modified = datetime(*d.modified[:6])
@@ -141,7 +139,9 @@ class FeedPollerSwitch(webapp.RequestHandler):
     is_feed_poller_enabled = memcache.get("feed_poller_enabled")
     if is_feed_poller_enabled is None or is_feed_poller_enabled == False:
       if not memcache.set("feed_poller_enabled", True):
-        logging.error("Memcache set failed for FeedPollerSwitch")
+        logging.error("Memcache set failed for FeedPollerSwitch:feed_poller_enabled")
+      if not memcache.set("feed_poller_running", False):
+        logging.error("Memcache set failed for FeedPollerSwitch:feed_poller_running")
     else:
       if not memcache.set("feed_poller_enabled", False):
         logging.error("Memcache set failed for FeedPollerSwitch")
