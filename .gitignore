@@ -1,7 +1,7 @@
 # specific directories
 
 # config/generated files
-config.py
+config.*.py
 
 # hidden files
 
@@ -18,3 +18,4 @@ config.py
 *.pyc
 *.pyo
 *.so
+*.komodoproject

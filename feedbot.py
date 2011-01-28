@@ -26,7 +26,7 @@ from lib import feedparser
 
 # our own imports
 from lib.watchbot import Watchbot
-import models
+from models import FeedStream, FeedItem
 from config import *
 
 
@@ -35,7 +35,7 @@ class FeedBot(Watchbot):
   
   def list(self):
     """List the streams created for this bot"""
-    streams = models.FeedStream.all().filter('deleted =', False).fetch(100)
+    streams = FeedStream.all().filter('deleted =', False).fetch(100)
     self.generate('streams.html', {"streams": streams, "title": "Feed Streams", "bot_path": "feeds"})
 
   def new(self):
@@ -108,7 +108,7 @@ class FeedBot(Watchbot):
     return
 
   def get_stream(self, stream_id):
-    return models.FeedStream.get_by_key_name("z%s" % stream_id)    
+    return FeedStream.get_by_key_name("z%s" % stream_id)    
 
   def render_html(self, stream):
     if stream is None:
@@ -170,7 +170,7 @@ class FeedBot(Watchbot):
 class FeedBotForm(djangoforms.ModelForm):
   """Class for use with django forms module"""
   class Meta:
-    model = models.FeedStream
+    model = FeedStream
     exclude = ['format','http_status','http_last_modified','http_etag','last_polled','deleted','pshb_is_subscribed','verify_token','pshb_hub_url','pshb_verify_token']
 
 

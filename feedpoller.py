@@ -24,7 +24,7 @@ from lib import feedfinder
 from lib import feedparser
 
 # our own imports
-import models
+from models import FeedStream, FeedItem
 from config import *
 
 
@@ -34,7 +34,7 @@ class FeedPoller(webapp.RequestHandler):
     # allow single feed to be updated
     key = self.request.get("key")
     if key is not None and len(key) > 0:
-      feed = models.FeedStream.get(db.Key(key))
+      feed = FeedStream.get(db.Key(key))
       if feed is None:
         self.response.out.write("no feed to update")
         return
@@ -50,7 +50,7 @@ class FeedPoller(webapp.RequestHandler):
       return
 
     # Get the stalest feed
-    feed = models.FeedStream.all().filter('deleted = ', False).order('last_polled').get()
+    feed = FeedStream.all().filter('deleted = ', False).order('last_polled').get()
 
     # Check how stale the stalest feed is, if it's been updated in the
     # last 10 minutes, we should take a break
@@ -73,25 +73,24 @@ class FeedPoller(webapp.RequestHandler):
     """Fetch the feed and process new items"""
     d = self.parse_feed(feed)
 
-    # process items
     to_put = []
     for entry in d['entries']:
-      item = self.process_entry(entry, feed)
-      if item is not None:
+      item = FeedItem.process_entry(entry, feed)
+      item_exists = FeedItem.get_by_key_name(item._key_name)
+      if item_exists is None:
         to_put.append(item)
+        # TODO: what about updates?
 
-    # persist new items
     if len(to_put) > 0:
       db.put(to_put)
       self.update_mavenn_activity(feed.stream_id, to_put)
 
-    # update stream
-    if 'status' in d:
-      logging.info(d.status)
+    # update feedstream properties
+    if hasattr(d, 'status'):
       feed.http_status = str(d.status)
-      if 'modified' in d:
+      if hasattr(d, 'modified'):
         feed.http_last_modified = datetime(*d.modified[:6])
-      if 'etag' in d:
+      if hasattr(d, 'etag'):
         feed.http_etag = d.etag
     feed.last_polled = datetime.utcnow()
     feed.put()
@@ -115,41 +114,6 @@ class FeedPoller(webapp.RequestHandler):
         logging.error("Unicode error parsing feed: %s" % feed.url)
         return None
 
-  def process_entry(self, entry, feed):
-    """Prepare and save the entry"""
-    id = None
-    published = None
-    updated = None
-    author = None
-    description = None
-    
-    if 'published' in entry:
-      published = datetime(*entry.published_parsed[:6])
-    if 'updated' in entry:
-      updated = datetime(*entry.updated_parsed[:6])
-    if 'id' in entry:
-      id = entry['id']
-    if 'author' in entry:
-      author = entry['author']
-    # Per RSS spec, at least one of title or description must be present.
-    if 'description' in entry:
-      description = entry['description']
-    else:
-      description = entry['title']
-
-    item_exists = feed.items.filter('id =', id).get()
-    if item_exists is None:
-      feeditem = models.FeedItem(stream=feed,
-                                 id=id,
-                                 title=entry['title'],
-                                 url=entry['link'],
-                                 summary=description,
-                                 author=author,
-                                 published=published,
-                                 updated=updated)
-      return feeditem
-    return None
-
   def update_mavenn_activity(self, stream_id, items):
     mavenn_activity_update = {"status": "active", "stream_id": stream_id}
     activities = []
@@ -158,7 +122,7 @@ class FeedPoller(webapp.RequestHandler):
     mavenn_activity_update["activity"] = activities
     activity = simplejson.dumps(mavenn_activity_update)
     
-    url = "http://mavenn.com/2010-10-17/streams/%s/activity" % stream_id
+    url = MAVENN_API_URL % stream_id
     pair = "%s:%s" % (FEEDBOT_MAVENN_API_KEY, FEEDBOT_MAVENN_AUTH_TOKEN)
     token = base64.b64encode(pair)
     headers = {"Content-Type": "application/json", "Authorization": "Basic %s" % token}
@@ -175,7 +139,9 @@ class FeedPollerSwitch(webapp.RequestHandler):
     is_feed_poller_enabled = memcache.get("feed_poller_enabled")
     if is_feed_poller_enabled is None or is_feed_poller_enabled == False:
       if not memcache.set("feed_poller_enabled", True):
-        logging.error("Memcache set failed for FeedPollerSwitch")
+        logging.error("Memcache set failed for FeedPollerSwitch:feed_poller_enabled")
+      if not memcache.set("feed_poller_running", False):
+        logging.error("Memcache set failed for FeedPollerSwitch:feed_poller_running")
     else:
       if not memcache.set("feed_poller_enabled", False):
         logging.error("Memcache set failed for FeedPollerSwitch")
