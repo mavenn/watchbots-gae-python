@@ -89,7 +89,7 @@ class FeedItem(db.Model):
     else:
       # Per RSS spec, at least one of title or description must be present.
       content = (entry.get('description', '') or title)
-      entry_id = (entry.get('id', '') or link or title or content)
+      entry_id = (entry.get('id', '') or link or title)
 
     if hasattr(entry, 'published'):
       published = datetime.datetime(*entry.published_parsed[:6])
@@ -100,10 +100,10 @@ class FeedItem(db.Model):
     feeditem = cls(key_name=entry_key_name,
       stream=feed,
       id=entry_id,
-      title=title,
+      title=unicode(title),
       url=link,
-      summary=content,
-      author=author,
+      summary=unicode(content),
+      author=unicode(author),
       published=published,
       updated=updated)
     return feeditem
