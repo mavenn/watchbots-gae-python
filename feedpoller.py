@@ -83,7 +83,7 @@ class FeedPoller(webapp.RequestHandler):
 
     if len(to_put) > 0:
       db.put(to_put)
-      self.update_mavenn_activity(feed.stream_id, to_put)
+      #self.update_mavenn_activity(feed.stream_id, to_put)
 
     # update feedstream properties
     if hasattr(d, 'status'):

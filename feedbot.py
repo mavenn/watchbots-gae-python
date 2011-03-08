@@ -154,6 +154,7 @@ class FeedBot(Watchbot):
     if not memcache.set("feed_poller_running", True):
       logging.error("memcache set failed")
     task = taskqueue.Task(url='/feedpoller/tasks/poll', params={}).add(queue_name="feed-poller")
+
     logging.debug("woke up the feed poller")
     self.response.out.write("woke up the feed poller")
 
