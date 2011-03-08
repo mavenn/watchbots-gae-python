@@ -82,14 +82,14 @@ class FeedItem(db.Model):
     title = entry.get('title', '')
     author = entry.get('author', '')
 
-    if hasattr(entry, 'content'):
-      # This is Atom.
-      entry_id = entry.id
-      content = entry.content[0].value
-    else:
+    #if hasattr(entry, 'content'):
+    #  # This is Atom.
+    #  entry_id = entry.id
+    #  content = entry.content[0].value
+    #else:
       # Per RSS spec, at least one of title or description must be present.
-      content = (entry.get('description', '') or title)
-      entry_id = (entry.get('id', '') or link or title)
+    content = (entry.get('description', '') or title)
+    entry_id = (entry.get('id', '') or link or title)
 
     if hasattr(entry, 'published'):
       published = datetime.datetime(*entry.published_parsed[:6])
@@ -100,10 +100,10 @@ class FeedItem(db.Model):
     feeditem = cls(key_name=entry_key_name,
       stream=feed,
       id=entry_id,
-      title=unicode(title),
+      title=title,
       url=link,
-      summary=unicode(content),
-      author=unicode(author),
+      summary=content,
+      author=author,
       published=published,
       updated=updated)
     return feeditem
