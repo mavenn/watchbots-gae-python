@@ -26,7 +26,7 @@ from lib import feedparser
 
 # our own imports
 from lib.watchbot import Watchbot
-from models import FeedStream, FeedItem
+from models import FeedStream, FeedItem, FeedPollerConfig
 from config import *
 
 
@@ -138,7 +138,7 @@ class FeedBot(Watchbot):
 
   def cron(self):
     """Wake up the feed poller"""
-    is_enabled = memcache.get("feed_poller_enabled")
+    is_enabled = FeedPollerConfig.get_instance().is_enabled 
     if is_enabled is None or is_enabled == False:
       logging.debug("feed poller not enabled")
       self.response.out.write("feed poller not enabled")

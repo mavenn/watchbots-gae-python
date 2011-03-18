@@ -16,6 +16,29 @@ from django.utils import simplejson
 
 from lib import feedparser
 
+#
+# Ideas for storing dynamic configuration information in the datastore:
+# http://stackoverflow.com/questions/3777367/what-is-a-good-place-to-store-configuration-in-google-appengine-python
+# http://stackoverflow.com/questions/2396101/storing-app-settings-on-google-app-engine
+#
+class Configuration(db.Model):
+  CACHE_TIME = datetime.timedelta(minutes=10)
+
+  _INSTANCE = None
+  _INSTANCE_AGE = None
+
+  @classmethod
+  def get_instance(cls):
+    now = datetime.datetime.now()
+    if not cls._INSTANCE or cls._INSTANCE_AGE + cls.CACHE_TIME < now:
+      cls._INSTANCE = cls.get_or_insert('config')
+      cls._INSTANCE_AGE = now
+    return cls._INSTANCE
+
+
+class FeedPollerConfig(Configuration):
+  is_enabled = db.BooleanProperty(default=False)
+
 
 class FeedStream(db.Model):
   stream_id = db.StringProperty(required=True)
