@@ -24,7 +24,7 @@ from lib import feedfinder
 from lib import feedparser
 
 # our own imports
-from models import FeedStream, FeedItem
+from models import FeedStream, FeedItem, FeedPollerConfig
 from config import *
 
 
@@ -43,7 +43,7 @@ class FeedPoller(webapp.RequestHandler):
       return
 
     # no key do the recursive polling
-    is_enabled = memcache.get("feed_poller_enabled")
+    is_enabled = FeedPollerConfig.get_instance().is_enabled
     if is_enabled is None or is_enabled == False:
       logging.info("feed poller not enabled shutting down")
       self.response.out.write("feed poller not enabled shutting down")
@@ -83,7 +83,7 @@ class FeedPoller(webapp.RequestHandler):
 
     if len(to_put) > 0:
       db.put(to_put)
-      self.update_mavenn_activity(feed.stream_id, to_put)
+      #self.update_mavenn_activity(feed.stream_id, to_put)
 
     # update feedstream properties
     if hasattr(d, 'status'):
@@ -136,16 +136,13 @@ class FeedPoller(webapp.RequestHandler):
 class FeedPollerSwitch(webapp.RequestHandler):
   """Turn the feed poller on and off"""
   def get(self):
-    is_feed_poller_enabled = memcache.get("feed_poller_enabled")
-    if is_feed_poller_enabled is None or is_feed_poller_enabled == False:
-      if not memcache.set("feed_poller_enabled", True):
-        logging.error("Memcache set failed for FeedPollerSwitch:feed_poller_enabled")
-      if not memcache.set("feed_poller_running", False):
-        logging.error("Memcache set failed for FeedPollerSwitch:feed_poller_running")
+    config = FeedPollerConfig.get_instance() 
+    if config.is_enabled is None or config.is_enabled == False:
+      config.is_enabled = True
     else:
-      if not memcache.set("feed_poller_enabled", False):
-        logging.error("Memcache set failed for FeedPollerSwitch")
-    self.response.out.write("enabled %s" % memcache.get("feed_poller_enabled"))
+      config.is_enabled = False
+    db.put(config)
+    self.response.out.write("enabled %s" % FeedPollerConfig.get_instance().is_enabled)
     
 
 def main():

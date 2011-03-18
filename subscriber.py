@@ -145,7 +145,7 @@ class CallbackHandler(webapp.RequestHandler):
         to_put.append(item)
     if len(to_put) > 0:
       db.put(to_put)
-      self.update_mavenn_activity(feedstream.stream_id, to_put)
+      #self.update_mavenn_activity(feedstream.stream_id, to_put)
 
     # Response headers (body can be empty) 
     # X-Hub-On-Behalf-Of
