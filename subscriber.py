@@ -61,7 +61,7 @@ class SubscriberHandler(webapp.RequestHandler):
 
   def subscribe_to_topic(self, stream, hub_url):
     """Execute subscription request to the hub"""
-    callback_url = urlparse.urljoin(self.request.url, '/subscriber/callback/', stream.stream_id)
+    callback_url = urlparse.urljoin(self.request.url, "/subscriber/callback/%s" % stream.stream_id)
     logging.info(callback_url)
     subscribe_args = {
         'hub.callback': callback_url,
