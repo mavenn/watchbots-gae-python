@@ -80,35 +80,40 @@ class FeedBot(Watchbot):
   def update(self, stream_id):
     """Update the feed properties"""
     logging.debug("in feedbot update")
-    return
 
-    stream = self.get_stream(stream_id)
-    url = self.request.POST.get('url')
-    
-    # reset stream properties
-    stream.url = url
-    stream.http_status = None
-    stream.http_etag = None
-    stream.http_last_modified = None
-    stream.last_polled = datetime(1900,1,1)
-    stream.put()
-    
-    self.response.headers['Content-Type'] = "application/json"
-    self.response.out.write('{"status": "success", "message": "stream updated"}')
-
-  def remove(self, stream_id):
-    """Override this to handle stream deletes"""  
     self.response.headers['Content-Type'] = "application/json"
     stream = self.get_stream(stream_id)
     if stream is None:
       webapp.RequestHandler.error(self, 404)
       self.response.out.write('{"status": "failed", "message": "stream not found"}')
-    else:
-      stream.deleted = True
-      stream.put()
-      #TODO: unsubscribe from PubSubHubBub
-      self.response.out.write('{"status": "success", "message": "stream deleted"}')
-    return
+      return
+
+    url = self.request.POST.get('url')
+    
+    # reset stream properties
+    #stream.url = url
+    stream.http_status = None
+    stream.http_etag = None
+    stream.http_last_modified = None
+    stream.last_polled = datetime(1900,1,1)
+    stream.put()
+    self.response.out.write('{"status": "success", "message": "stream updated"}')
+
+  def remove(self, stream_id):
+    """Override this to handle stream deletes"""  
+    logging.debug("in feedbot remove")
+
+    self.response.headers['Content-Type'] = "application/json"
+    stream = self.get_stream(stream_id)
+    if stream is None:
+      webapp.RequestHandler.error(self, 404)
+      self.response.out.write('{"status": "failed", "message": "stream not found"}')
+      return
+
+    stream.deleted = True
+    stream.put()
+    #TODO: unsubscribe from PubSubHubBub
+    self.response.out.write('{"status": "success", "message": "stream deleted"}')
 
   def get_stream(self, stream_id):
     return FeedStream.get_by_key_name("z%s" % stream_id)    
