@@ -76,11 +76,11 @@ class Watchbot(BaseHandler):
     elif stream_id == 'cron':
       self.cron()
     else:
-      method = self.request.get("method")
-      if method == '_update':
+      method = self.request.get("_method")
+      if method == 'PUT':
         self.update(stream_id)
-      elif method == '_delete':
-        self.delete_stream(stream_id)
+      elif method == 'DELETE':
+        self.remove(stream_id)
 
   def delete(self, stream_id='', format=''):
     """Handle the HTTP DELETE operation"""
@@ -93,7 +93,6 @@ class Watchbot(BaseHandler):
     logging.debug("in watchbot put")
     logging.debug(stream_id)
     logging.debug(self.request.body)
-    logging.debug(self.request.POST)
     self.update(stream_id)
 
   def list(self):
