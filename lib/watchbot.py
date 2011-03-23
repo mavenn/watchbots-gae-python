@@ -76,8 +76,8 @@ class Watchbot(BaseHandler):
     elif stream_id == 'cron':
       self.cron()
     else:
-      method = self.request.get("_method")
-      if method == 'PUT':
+      method = self.request.POST.get("_method")
+      if method == 'PUT' or method == 'UPDATE':
         self.update(stream_id)
       elif method == 'DELETE':
         self.remove(stream_id)
