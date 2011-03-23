@@ -67,6 +67,10 @@ class Watchbot(BaseHandler):
 
   def post(self, stream_id='', format=''):
     """Handle the HTTP POST operations"""
+    logging.debug("in watchbot post")
+    logging.debug(stream_id)
+    logging.debug(self.request.POST)
+
     if stream_id is None or stream_id == '':
       self.create()
     elif stream_id == 'cron':
@@ -80,10 +84,14 @@ class Watchbot(BaseHandler):
 
   def delete(self, stream_id='', format=''):
     """Handle the HTTP DELETE operation"""
+    logging.debug("in watchbot delete")
+    logging.debug(stream_id)
     self.remove(stream_id)
   
   def put(self, stream_id='', format=''):
     """Handle the HTTP PUT operation"""
+    logging.debug("in watchbot put")
+    logging.debug(stream_id)
     self.update(stream_id)
 
   def list(self):

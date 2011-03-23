@@ -45,7 +45,6 @@ class FeedBot(Watchbot):
 
   def create(self):
     """Create new instance of bot"""
-    logging.info(self.request.POST)
     streamform = FeedBotForm(data=self.request.POST)
     if streamform.is_valid():
       # shortcut to instantiate entity from form
@@ -80,7 +79,9 @@ class FeedBot(Watchbot):
 
   def update(self, stream_id):
     """Update the feed properties"""
-    logging.info(self.request.POST)
+    logging.debug("in feedbot update")
+    return
+
     stream = self.get_stream(stream_id)
     url = self.request.POST.get('url')
     
