@@ -92,6 +92,8 @@ class Watchbot(BaseHandler):
     """Handle the HTTP PUT operation"""
     logging.debug("in watchbot put")
     logging.debug(stream_id)
+    logging.debug(self.request.body)
+    logging.debug(self.request.POST)
     self.update(stream_id)
 
   def list(self):
