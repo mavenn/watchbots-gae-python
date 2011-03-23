@@ -145,7 +145,7 @@ class CallbackHandler(webapp.RequestHandler):
         to_put.append(item)
     if len(to_put) > 0:
       db.put(to_put)
-      #self.update_mavenn_activity(feedstream.stream_id, to_put)
+      self.update_mavenn_activity(feedstream.stream_id, to_put)
 
     # Response headers (body can be empty) 
     # X-Hub-On-Behalf-Of
@@ -160,15 +160,17 @@ class CallbackHandler(webapp.RequestHandler):
     mavenn_activity_update["activity"] = activities
     activity = simplejson.dumps(mavenn_activity_update)
     
+    logging.debug("notifying mavenn")
     url = MAVENN_API_URL % stream_id
     pair = "%s:%s" % (FEEDBOT_MAVENN_API_KEY, FEEDBOT_MAVENN_AUTH_TOKEN)
     token = base64.b64encode(pair)
     headers = {"Content-Type": "application/json", "Authorization": "Basic %s" % token}
+    logging.debug(headers)
+    logging.debug(activity)
     result = urlfetch.fetch(url, payload=activity, method=urlfetch.POST,headers=headers)
     logging.debug(result.status_code)
     logging.debug(result.headers)
-    #logging.debug(result.content)
-    return
+    logging.debug(result.content)
 
 
 def find_feed_url(linkrel, links):
