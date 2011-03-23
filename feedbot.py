@@ -88,10 +88,9 @@ class FeedBot(Watchbot):
       self.response.out.write('{"status": "failed", "message": "stream not found"}')
       return
 
-    url = self.request.POST.get('url')
-    
     # reset stream properties
-    #stream.url = url
+    #stream.url = self.request.POST.get('url')
+    stream.title = self.request.POST.get('title')
     stream.http_status = None
     stream.http_etag = None
     stream.http_last_modified = None
