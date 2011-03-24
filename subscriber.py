@@ -17,6 +17,8 @@ import random
 import urllib
 import urlparse
 import wsgiref.handlers
+from datetime import datetime
+
 from google.appengine.api import urlfetch
 from google.appengine.ext import db
 from google.appengine.ext import webapp
@@ -24,8 +26,6 @@ from google.appengine.ext.webapp import template
 from django.utils import simplejson
 
 from lib import feedparser
-
-from lib.watchbot import BaseHandler
 from models import FeedStream, FeedItem
 from config import *
 
@@ -62,7 +62,7 @@ class SubscriberHandler(webapp.RequestHandler):
   def subscribe_to_topic(self, stream, hub_url):
     """Execute subscription request to the hub"""
     callback_url = urlparse.urljoin(self.request.url, "/subscriber/callback/%s" % stream.stream_id)
-    logging.info(callback_url)
+    logging.debug(callback_url)
     subscribe_args = {
         'hub.callback': callback_url,
         'hub.mode': 'subscribe',
@@ -115,6 +115,7 @@ class CallbackHandler(webapp.RequestHandler):
   def post(self, stream_id):
     """Handles Content Distribution notifications."""
     logging.debug(self.request.headers)
+    logging.debug(self.request.body)
 
     feed = feedparser.parse(self.request.body)
     if feed.bozo:
@@ -145,6 +146,9 @@ class CallbackHandler(webapp.RequestHandler):
         to_put.append(item)
     if len(to_put) > 0:
       db.put(to_put)
+      # update feed last_polled or http_last_modified so feed poller doesn't have to check this feed for a while
+      feedstream.last_polled = datetime.utcnow()
+      feedstream.put()
       self.update_mavenn_activity(feedstream.stream_id, to_put)
 
     # Response headers (body can be empty) 
