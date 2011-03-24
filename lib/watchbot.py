@@ -87,6 +87,7 @@ class Watchbot(BaseHandler):
     logging.debug("in watchbot delete")
     logging.debug(stream_id)
     #self.remove(stream_id)
+    self.response.set_status(501)
   
   def put(self, stream_id='', format=''):
     """Handle the HTTP PUT operation"""
@@ -94,6 +95,7 @@ class Watchbot(BaseHandler):
     logging.debug(stream_id)
     logging.debug(self.request.body)
     #self.update(stream_id)
+    self.response.set_status(501)
 
   def list(self):
     """List the streams created for this bot"""
