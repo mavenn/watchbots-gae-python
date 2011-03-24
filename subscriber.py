@@ -165,8 +165,8 @@ class CallbackHandler(webapp.RequestHandler):
     pair = "%s:%s" % (FEEDBOT_MAVENN_API_KEY, FEEDBOT_MAVENN_AUTH_TOKEN)
     token = base64.b64encode(pair)
     headers = {"Content-Type": "application/json", "Authorization": "Basic %s" % token}
-    logging.debug(headers)
-    logging.debug(activity)
+    #logging.debug(headers)
+    #logging.debug(activity)
     result = urlfetch.fetch(url, payload=activity, method=urlfetch.POST,headers=headers)
     logging.debug(result.status_code)
     logging.debug(result.headers)
