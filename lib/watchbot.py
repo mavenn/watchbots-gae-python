@@ -86,14 +86,14 @@ class Watchbot(BaseHandler):
     """Handle the HTTP DELETE operation"""
     logging.debug("in watchbot delete")
     logging.debug(stream_id)
-    self.remove(stream_id)
+    #self.remove(stream_id)
   
   def put(self, stream_id='', format=''):
     """Handle the HTTP PUT operation"""
     logging.debug("in watchbot put")
     logging.debug(stream_id)
     logging.debug(self.request.body)
-    self.update(stream_id)
+    #self.update(stream_id)
 
   def list(self):
     """List the streams created for this bot"""
