@@ -26,7 +26,7 @@ from lib import feedparser
 
 # our own imports
 from lib.watchbot import Watchbot
-from models import FeedStream, FeedItem
+from models import FeedStream, FeedItem, FeedPollerConfig
 from config import *
 
 
@@ -79,33 +79,40 @@ class FeedBot(Watchbot):
 
   def update(self, stream_id):
     """Update the feed properties"""
-    stream = self.get_stream(stream_id)
-    url = self.request.POST.get('url')
-    
-    # reset stream properties
-    stream.url = url
-    stream.http_status = None
-    stream.http_etag = None
-    stream.http_last_modified = None
-    stream.last_polled = datetime(1900,1,1)
-    stream.put()
-    
-    self.response.headers['Content-Type'] = "application/json"
-    self.response.out.write('{"status": "success", "message": "stream updated"}')
+    logging.debug("in feedbot update")
 
-  def remove(self, stream_id):
-    """Override this to handle stream deletes"""  
     self.response.headers['Content-Type'] = "application/json"
     stream = self.get_stream(stream_id)
     if stream is None:
       webapp.RequestHandler.error(self, 404)
       self.response.out.write('{"status": "failed", "message": "stream not found"}')
-    else:
-      stream.deleted = True
-      stream.put()
-      #TODO: unsubscribe from PubSubHubBub
-      self.response.out.write('{"status": "success", "message": "stream deleted"}')
-    return
+      return
+
+    # reset stream properties
+    #stream.url = self.request.POST.get('url')
+    stream.title = self.request.POST.get('title')
+    stream.http_status = None
+    stream.http_etag = None
+    stream.http_last_modified = None
+    stream.last_polled = datetime(1900,1,1)
+    stream.put()
+    self.response.out.write('{"status": "success", "message": "stream updated"}')
+
+  def remove(self, stream_id):
+    """Override this to handle stream deletes"""  
+    logging.debug("in feedbot remove")
+
+    self.response.headers['Content-Type'] = "application/json"
+    stream = self.get_stream(stream_id)
+    if stream is None:
+      webapp.RequestHandler.error(self, 404)
+      self.response.out.write('{"status": "failed", "message": "stream not found"}')
+      return
+
+    stream.deleted = True
+    stream.put()
+    #TODO: unsubscribe from PubSubHubBub
+    self.response.out.write('{"status": "success", "message": "stream deleted"}')
 
   def get_stream(self, stream_id):
     return FeedStream.get_by_key_name("z%s" % stream_id)    
@@ -138,7 +145,7 @@ class FeedBot(Watchbot):
 
   def cron(self):
     """Wake up the feed poller"""
-    is_enabled = memcache.get("feed_poller_enabled")
+    is_enabled = FeedPollerConfig.get_instance().is_enabled 
     if is_enabled is None or is_enabled == False:
       logging.debug("feed poller not enabled")
       self.response.out.write("feed poller not enabled")

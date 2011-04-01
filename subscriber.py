@@ -17,6 +17,8 @@ import random
 import urllib
 import urlparse
 import wsgiref.handlers
+from datetime import datetime
+
 from google.appengine.api import urlfetch
 from google.appengine.ext import db
 from google.appengine.ext import webapp
@@ -24,8 +26,6 @@ from google.appengine.ext.webapp import template
 from django.utils import simplejson
 
 from lib import feedparser
-
-from lib.watchbot import BaseHandler
 from models import FeedStream, FeedItem
 from config import *
 
@@ -61,8 +61,8 @@ class SubscriberHandler(webapp.RequestHandler):
 
   def subscribe_to_topic(self, stream, hub_url):
     """Execute subscription request to the hub"""
-    callback_url = urlparse.urljoin(self.request.url, '/subscriber/callback/', stream.stream_id)
-    logging.info(callback_url)
+    callback_url = urlparse.urljoin(self.request.url, "/subscriber/callback/%s" % stream.stream_id)
+    logging.debug(callback_url)
     subscribe_args = {
         'hub.callback': callback_url,
         'hub.mode': 'subscribe',
@@ -115,6 +115,7 @@ class CallbackHandler(webapp.RequestHandler):
   def post(self, stream_id):
     """Handles Content Distribution notifications."""
     logging.debug(self.request.headers)
+    logging.debug(self.request.body)
 
     feed = feedparser.parse(self.request.body)
     if feed.bozo:
@@ -145,7 +146,10 @@ class CallbackHandler(webapp.RequestHandler):
         to_put.append(item)
     if len(to_put) > 0:
       db.put(to_put)
-      #self.update_mavenn_activity(feedstream.stream_id, to_put)
+      # update feed last_polled or http_last_modified so feed poller doesn't have to check this feed for a while
+      feedstream.last_polled = datetime.utcnow()
+      feedstream.put()
+      self.update_mavenn_activity(feedstream.stream_id, to_put)
 
     # Response headers (body can be empty) 
     # X-Hub-On-Behalf-Of
@@ -160,15 +164,17 @@ class CallbackHandler(webapp.RequestHandler):
     mavenn_activity_update["activity"] = activities
     activity = simplejson.dumps(mavenn_activity_update)
     
+    logging.debug("notifying mavenn")
     url = MAVENN_API_URL % stream_id
     pair = "%s:%s" % (FEEDBOT_MAVENN_API_KEY, FEEDBOT_MAVENN_AUTH_TOKEN)
     token = base64.b64encode(pair)
     headers = {"Content-Type": "application/json", "Authorization": "Basic %s" % token}
+    #logging.debug(headers)
+    #logging.debug(activity)
     result = urlfetch.fetch(url, payload=activity, method=urlfetch.POST,headers=headers)
     logging.debug(result.status_code)
     logging.debug(result.headers)
-    #logging.debug(result.content)
-    return
+    logging.debug(result.content)
 
 
 def find_feed_url(linkrel, links):
