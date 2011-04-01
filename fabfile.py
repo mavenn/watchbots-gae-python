@@ -26,7 +26,7 @@ def hello():
 
 def test():
     """Run the test suite."""
-    local("python ./tests/testrunner.py %s ./tests" % APPENGINE_PATH)
+    local("python2.5 ./tests/testrunner.py %s ./tests" % APPENGINE_PATH)
     
 def staging():
     """Sets the deployment target to staging."""
