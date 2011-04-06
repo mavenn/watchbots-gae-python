@@ -9,9 +9,11 @@ import datetime
 import re
 
 #Some environment information to customize
-APPENGINE_DEV_APPSERVER = "/opt/google/google_appengine/dev_appserver.py"
-APPENGINE_PATH = "/opt/google/google_appengine/"
-APPENGINE_APP_CFG = "/opt/google/google_appengine/appcfg.py"
+APPENGINE_PATH = "/opt/google/google_appengine"
+#APPENGINE_PATH = "/usr/local/bin" #mac
+
+APPENGINE_DEV_APPSERVER = "%s/dev_appserver.py" % APPENGINE_PATH
+APPENGINE_APP_CFG = "%s/appcfg.py" % APPENGINE_PATH
 PYTHON = "/usr/bin/python2.5"
 
 #default values
@@ -24,7 +26,7 @@ def hello():
 
 def test():
     """Run the test suite."""
-    x = 5
+    local("python2.5 ./tests/testrunner.py %s ./tests" % APPENGINE_PATH)
     
 def staging():
     """Sets the deployment target to staging."""
