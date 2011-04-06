@@ -102,8 +102,8 @@ class FeedItem(db.Model):
     published = None
     updated = None
     link = entry.get('link', '')
-    title = ''.join(entry.get('title', '').splitlines())
-    author = ''.join(entry.get('author', '').splitlines())
+    title = ' '.join(entry.get('title', '').splitlines())
+    author = ' '.join(entry.get('author', '').splitlines())
 
     #if hasattr(entry, 'content'):
     #  # This is Atom.
