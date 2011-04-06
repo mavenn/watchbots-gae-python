@@ -82,7 +82,7 @@ class FeedItem(db.Model):
     if activity_time is None:
       activity_time = self.updated
     if activity_time is None:
-      activity_time = datetime.datetime.utcnow()
+      activity_time = self.created
     
     activity = {
       "action": {"type": "feeditem",
