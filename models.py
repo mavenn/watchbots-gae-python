@@ -115,9 +115,15 @@ class FeedItem(db.Model):
     entry_id = (entry.get('id', '') or link or title)
 
     if hasattr(entry, 'published'):
-      published = datetime.datetime(*entry.published_parsed[:6])
+      try:
+        published = datetime.datetime(*entry.published_parsed[:6])
+      except:
+        logging.error("Unable to parse published time")
     if hasattr(entry, 'updated'):
-      updated = datetime.datetime(*entry.updated_parsed[:6])
+      try:
+        updated = datetime.datetime(*entry.updated_parsed[:6])
+      except:
+        logging.error("Unable to parse updated time")
       
     entry_key_name = 'z' + hashlib.sha1(link + '\n' + entry_id + '\n' + feed.stream_id).hexdigest()
     feeditem = cls(key_name=entry_key_name,
