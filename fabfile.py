@@ -9,8 +9,8 @@ import datetime
 import re
 
 #Some environment information to customize
-#APPENGINE_PATH = "/opt/google/google_appengine"
-APPENGINE_PATH = "/usr/local/bin" #mac
+APPENGINE_PATH = "/opt/google/google_appengine"
+#APPENGINE_PATH = "/usr/local/bin" #mac
 
 APPENGINE_DEV_APPSERVER = "%s/dev_appserver.py" % APPENGINE_PATH
 APPENGINE_APP_CFG = "%s/appcfg.py" % APPENGINE_PATH
