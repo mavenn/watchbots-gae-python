@@ -81,6 +81,9 @@ class FeedItem(db.Model):
     activity_time = self.published
     if activity_time is None:
       activity_time = self.updated
+    if activity_time is None:
+      activity_time = datetime.datetime.utcnow()
+    
     activity = {
       "action": {"type": "feeditem",
                  "summary": self.summary,
