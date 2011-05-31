@@ -77,7 +77,11 @@ class FeedPoller(webapp.RequestHandler):
   def update_feed(self, feed):
     """Fetch the feed and process new items"""
     d = self.parse_feed(feed)
-    logging.debug(d)
+    if d is None:
+      logging.warn("Parsing failed")
+      feed.last_polled = datetime.utcnow()
+      feed.put()
+      return
 
     to_put = []
     for entry in d['entries']:
