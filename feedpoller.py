@@ -77,6 +77,7 @@ class FeedPoller(webapp.RequestHandler):
   def update_feed(self, feed):
     """Fetch the feed and process new items"""
     d = self.parse_feed(feed)
+    logging.debug(d)
 
     to_put = []
     for entry in d['entries']:
