@@ -43,14 +43,14 @@ class BaseHandler(webapp.RequestHandler):
 
     values.update(template_values)
     directory = os.path.dirname(__file__)
-    path = os.path.join(directory, os.path.join('../', 'templates', template_name))
+    path = os.path.join(directory, os.path.join('templates', template_name))
       
     try:
       self.response.out.write(template.render(path, values, debug=True))
     except TemplateDoesNotExist, e:
       self.response.headers["Content-Type"] = "text/html; charset=utf-8"
       self.response.set_status(404)
-      self.response.out.write(template.render(os.path.join('../', 'templates', '404.html'), values, debug=True))
+      self.response.out.write(template.render(os.path.join('templates', '404.html'), values, debug=True))
 
   def error(self, status_code):
     webapp.RequestHandler.error(self, status_code)
@@ -61,14 +61,14 @@ class BaseHandler(webapp.RequestHandler):
 class ListHandler(BaseHandler):
   def get(self):
     streams = FeedStream.all().filter('deleted =', False).fetch(100)
-    self.generate('admin/list.html', {"streams": streams})
+    self.generate('admin/list.html', { "streams": streams })
 
 
 class ViewHandler(BaseHandler):
   def get(self, key):
     stream = FeedStream.get_by_key_name("z%s" % key)    
     items = stream.items.order('-updated').fetch(10)
-    self.generate('admin/view.html', {"items": items, "stream": stream})
+    self.generate('admin/view.html', { "items": items, "stream": stream })
 
 
 class DeleteHandler(BaseHandler):
