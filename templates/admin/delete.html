@@ -10,8 +10,7 @@
 
 Are you sure you want to delete?
 
-<form action="/feeds/{{ stream.stream_id }}" method="post">
-  <input type="hidden" name="_method" value="DELETE">
+<form action="/admin/feed/{{ stream.stream_id }}/delete" method="post">
   <input type="submit">
 </form>
 
