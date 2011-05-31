@@ -49,7 +49,7 @@ class BaseHandler(webapp.RequestHandler):
 
 class ListHandler(BaseHandler):
   def get(self):
-    streams = FeedStream.all().order('-created').fetch(100)
+    streams = FeedStream.all().order('-created').fetch(200)
     self.generate('admin/list.html', { "streams": streams })
 
 
