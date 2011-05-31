@@ -61,8 +61,7 @@ class BaseHandler(webapp.RequestHandler):
 class ListHandler(BaseHandler):
   def get(self):
     streams = FeedStream.all().filter('deleted =', False).fetch(100)
-    self.generate('streams.html', {"streams": streams, "title": "Feed Streams", "bot_path": "feeds"})
-    self.generate('admin/list.html')
+    self.generate('admin/list.html', {"streams": streams})
 
 
 class ViewHandler(BaseHandler):
