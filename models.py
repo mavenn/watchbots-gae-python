@@ -142,5 +142,6 @@ class FeedItem(db.Model):
         updated=updated)
     except:
       logging.warn("Failed to process: %s %s" % (link, entry_id))
+      logging.error(sys.exc_info()[0])
 
     return feeditem
