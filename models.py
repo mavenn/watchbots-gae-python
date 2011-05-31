@@ -128,18 +128,19 @@ class FeedItem(db.Model):
       except:
         logging.warn("Unable to parse updated time")
         
-    logging.debug(link)
-    logging.debug(entry_id)
-    logging.debug(feed.stream_id)
-      
-    entry_key_name = 'z' + hashlib.sha1(link + '\n' + entry_id + '\n' + feed.stream_id).hexdigest()
-    feeditem = cls(key_name=entry_key_name,
-      stream=feed,
-      id=entry_id,
-      title=title,
-      url=link,
-      summary=content,
-      author=author,
-      published=published,
-      updated=updated)
+    feeditem = None  
+    try:
+      entry_key_name = 'z' + hashlib.sha1(link + '\n' + entry_id + '\n' + feed.stream_id).hexdigest()
+      feeditem = cls(key_name=entry_key_name,
+        stream=feed,
+        id=entry_id,
+        title=title,
+        url=link,
+        summary=content,
+        author=author,
+        published=published,
+        updated=updated)
+    except:
+      logging.warn("Failed to process: %s %s" % (link, entry_id))
+
     return feeditem

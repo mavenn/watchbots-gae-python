@@ -63,7 +63,7 @@ class ViewHandler(BaseHandler):
 class DeleteHandler(BaseHandler):
   def get(self, key):
     stream = FeedStream.get_by_key_name("z%s" % key)    
-    self.generate('admin/delete.html')
+    self.generate('admin/delete.html', { "stream": stream })
 
   def post(self, key):
     stream = FeedStream.get_by_key_name("z%s" % key)

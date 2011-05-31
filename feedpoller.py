@@ -76,10 +76,11 @@ class FeedPoller(webapp.RequestHandler):
     to_put = []
     for entry in d['entries']:
       item = FeedItem.process_entry(entry, feed)
-      item_exists = FeedItem.get_by_key_name(item._key_name)
-      if item_exists is None:
-        to_put.append(item)
-        # TODO: what about updates?
+      if item is not None:
+        item_exists = FeedItem.get_by_key_name(item._key_name)
+        if item_exists is None:
+          to_put.append(item)
+          # TODO: what about updates?
 
     if len(to_put) > 0:
       db.put(to_put)
