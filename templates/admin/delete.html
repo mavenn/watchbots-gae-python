@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+
+{% block title %}watchbots{% endblock %}
+{% block meta_description %}{% endblock %}
+
+{% block body %}
+
+<h1>{{ stream.title }}</h1>
+
+Are you sure you want to delete?
+
+<form action="/feeds/{{ stream.stream_id }}" method="post">
+  <input type="hidden" name="_method" value="DELETE">
+  <input type="submit">
+</form>
+
+
+{% endblock %}
