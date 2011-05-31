@@ -8,11 +8,32 @@
 
 <h1>Feed Streams</h1>    
 
+<table>
+  <tr>
+    <th></th>
+    <th></th>
+    <th></th>
+    <th></th>
+    <th></th>
+    <th></th>
+    <th></th>
+    <th></th>
+  </tr>
+  
+
 {% for stream in streams %}
-  <div>
-    <a href="/admin/feed/{{ stream.stream_id}}">{{stream.title}}</a>
-  </div>
+  <tr>
+    <td><a href="/admin/feed/{{ stream.stream_id}}">{{ stream.stream_id }}</a></td>
+    <td>{{ stream.title }}</td>
+    <td>{{ stream.url }}</td>
+    <td>{{ stream.http_status }}</td>
+    <td>{{ stream.last_polled }}</td>
+    <td>{{ stream.pshb_is_subscribed }}</td>
+    <td>{{ stream.created }}</td>
+    <td>{{ stream.updated }}</td>
+  </tr>
 {% endfor %}
 
+</table>
 
 {% endblock %}
