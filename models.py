@@ -3,6 +3,7 @@
 """App Engine data model (schema) ."""
 
 # Python imports
+import sys
 import datetime
 import email
 import hashlib

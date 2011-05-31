@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # Python imports
+import sys
 import os
 import base64
 import logging
