@@ -9,25 +9,14 @@ from datetime import datetime
 
 # AppEngine imports
 import wsgiref.handlers
-from google.appengine.api import memcache
-from google.appengine.api import taskqueue
 from google.appengine.ext import db
-from google.appengine.ext import deferred
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp import util
-from google.appengine.ext.db import djangoforms
 from django.template import TemplateDoesNotExist
-from django.utils import simplejson
-
-# 3rd party library imports
-from lib import feedfinder
-from lib import feedparser
 
 # our own imports
-from lib.watchbot import Watchbot
 from models import FeedStream, FeedItem, FeedPollerConfig
-from config import *
 
 
 class BaseHandler(webapp.RequestHandler):
@@ -60,7 +49,7 @@ class BaseHandler(webapp.RequestHandler):
 
 class ListHandler(BaseHandler):
   def get(self):
-    streams = FeedStream.all().filter('deleted =', False).fetch(100)
+    streams = FeedStream.all().order('-created').fetch(100)
     self.generate('admin/list.html', { "streams": streams })
 
 
@@ -76,6 +65,13 @@ class DeleteHandler(BaseHandler):
     stream = FeedStream.get_by_key_name("z%s" % key)    
     self.generate('admin/delete.html')
 
+  def post(self, key):
+    stream = FeedStream.get_by_key_name("z%s" % key)
+    db.delete(stream.items)
+    stream.deleted = True
+    stream.put()
+    self.redirect('/admin/')
+    
 
 def main():
   logging.getLogger().setLevel(logging.DEBUG)

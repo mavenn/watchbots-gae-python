@@ -10,13 +10,14 @@
 
 <table>
   <tr>
-    <th></th>
-    <th></th>
-    <th></th>
-    <th></th>
-    <th></th>
-    <th></th>
-    <th></th>
+    <th>Stream ID</th>
+    <th>Title</th>
+    <th>Status</th>
+    <th>URL</th>
+    <th>HTTP Status</th>
+    <th>PuSH Subscribed</th>
+    <th>Created</th>
+    <th>Last Polled</th>
     <th></th>
   </tr>
   
@@ -25,12 +26,12 @@
   <tr>
     <td><a href="/admin/feed/{{ stream.stream_id}}">{{ stream.stream_id }}</a></td>
     <td>{{ stream.title }}</td>
+    <td>{{ stream.deleted }}</td>
     <td>{{ stream.url }}</td>
-    <td>{{ stream.http_status }}</td>
-    <td>{{ stream.last_polled }}</td>
     <td>{{ stream.pshb_is_subscribed }}</td>
     <td>{{ stream.created }}</td>
-    <td>{{ stream.updated }}</td>
+    <td>{{ stream.last_polled }}</td>
+    <td><a href="/admin/feed/{{ stream.stream_id}}/delete">Delete</a>
   </tr>
 {% endfor %}
 
