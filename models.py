@@ -106,6 +106,8 @@ class FeedItem(db.Model):
     published = None
     updated = None
     link = entry.get('link', '')
+    if hasattr(entry, 'feedburner_origlink'):
+      link = entry.get('feedburner_origlink')
     title = ' '.join(entry.get('title', '').splitlines())
     author = ' '.join(entry.get('author', '').splitlines())
 
