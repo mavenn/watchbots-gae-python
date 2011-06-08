@@ -143,7 +143,6 @@ class Watchbot(BaseHandler):
       webapp.RequestHandler.error(self, 404)
       self.response.out.write('{"status": "failed", "message": "stream not found"}')
     else:
-      stream.delete()
       self.response.out.write('{"status": "success", "message": "stream deleted"}')
     return
 
