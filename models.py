@@ -92,13 +92,13 @@ class FeedItem(db.Model):
         "time": activity_time.strftime("%a, %d %b %Y %H:%M:%S +0000"),
         "uid": str(self.key()),
         "meta": {}
-      },
+        },
       "object": {
         "url": self.url,
         "summary": self.summary,
         "title": self.title
+        }
       }
-    }
     return activity
 
   @classmethod
