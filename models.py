@@ -84,18 +84,20 @@ class FeedItem(db.Model):
       activity_time = self.updated
     if activity_time is None:
       activity_time = self.created
-  
+    
     activity = {
+      "actor":  {"person": self.author},
       "action": {
-        "type": "feeditem",
-        "summary": self.summary,
+        "type": "post",
         "time": activity_time.strftime("%a, %d %b %Y %H:%M:%S +0000"),
         "uid": self.key().name()[1:], #strip the z prepended for key_name compliance
+        "meta": {}
+        },
+      "object": {
         "url": self.url,
-        "meta": {},
-        "title": self.title},
-      "object": {"url": self.url},
-      "actor": {"person": self.author}
+        "summary": self.summary,
+        "title": self.title
+        }
       }
     return activity
 
