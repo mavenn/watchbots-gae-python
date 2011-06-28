@@ -86,16 +86,19 @@ class FeedItem(db.Model):
       activity_time = self.created
     
     activity = {
-      "action": {"type": "feeditem",
-                 "summary": self.summary,
-                 "time": activity_time.strftime("%a, %d %b %Y %H:%M:%S +0000"),
-                 "uid": str(self.key()),
-                 "url": self.url,
-                 "meta": {},
-                 "title": self.title},
-      "object": {"url": self.url},
-      "actor": {"person": self.author}
+      "actor":  {"person": self.author},
+      "action": {
+        "type": "post",
+        "time": activity_time.strftime("%a, %d %b %Y %H:%M:%S +0000"),
+        "uid": str(self.key()),
+        "meta": {}
+      },
+      "object": {
+        "url": self.url,
+        "summary": self.summary,
+        "title": self.title
       }
+    }
     return activity
 
   @classmethod
@@ -108,6 +111,7 @@ class FeedItem(db.Model):
     link = entry.get('link', '')
     if hasattr(entry, 'feedburner_origlink'):
       link = entry.get('feedburner_origlink')
+    #StringProperty doesn't allow linebreaks, so strip them out
     title = ' '.join(entry.get('title', '').splitlines())
     author = ' '.join(entry.get('author', '').splitlines())
 
