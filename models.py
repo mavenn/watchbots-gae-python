@@ -90,7 +90,7 @@ class FeedItem(db.Model):
       "action": {
         "type": "post",
         "time": activity_time.strftime("%a, %d %b %Y %H:%M:%S +0000"),
-        "uid": self.key().name(),
+        "uid": self.key().name()[1:], #strip the z prepended for key_name compliance
         "meta": {}
         },
       "object": {
