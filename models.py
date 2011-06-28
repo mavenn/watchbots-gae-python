@@ -77,27 +77,25 @@ class FeedItem(db.Model):
   updated = db.DateTimeProperty()
   mavenn_posted_at = db.DateTimeProperty()
   created = db.DateTimeProperty(auto_now_add=True)
-  
+
   def to_activity(self):
     activity_time = self.published
     if activity_time is None:
       activity_time = self.updated
     if activity_time is None:
       activity_time = self.created
-    
+  
     activity = {
-      "actor":  {"person": self.author},
       "action": {
-        "type": "post",
+        "type": "feeditem",
+        "summary": self.summary,
         "time": activity_time.strftime("%a, %d %b %Y %H:%M:%S +0000"),
         "uid": self.key().name()[1:], #strip the z prepended for key_name compliance
-        "meta": {}
-        },
-      "object": {
         "url": self.url,
-        "summary": self.summary,
-        "title": self.title
-        }
+        "meta": {},
+        "title": self.title},
+      "object": {"url": self.url},
+      "actor": {"person": self.author}
       }
     return activity
 
