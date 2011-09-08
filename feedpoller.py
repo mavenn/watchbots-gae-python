@@ -69,6 +69,12 @@ class FeedPoller(webapp.RequestHandler):
     except:
       logging.warn("Update Failed for feed with stream_id %s and url: %s" % (feed.stream_id, feed.url))
       logging.error(sys.exc_info()[0])
+      try:
+        feed.last_polled = datetime.utcnow()
+        feed.has_error = True
+        feed.put()
+      except:
+        logging.warn("failed to save feed error")
     
     # Queue the next feed
     task = taskqueue.Task(url='/feedpoller/tasks/poll', params={}).add(queue_name="feed-poller")

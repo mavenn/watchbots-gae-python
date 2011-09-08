@@ -54,6 +54,7 @@ class FeedStream(db.Model):
   pshb_verify_token = db.StringProperty()  # Random verification token
   pshb_hub_url = db.LinkProperty() # store and track it, in case the publisher moves its hub
   pshb_is_subscribed = db.BooleanProperty()
+  has_error = db.BooleanProperty(default=False)
   created = db.DateTimeProperty(auto_now_add=True)
   updated = db.DateTimeProperty(auto_now=True)
   
