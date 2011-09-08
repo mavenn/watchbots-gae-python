@@ -1,0 +1,20 @@
+{% extends "../base.html" %}
+
+{% block title %}watchbots{% endblock %}
+{% block meta_description %}{% endblock %}
+
+{% block body %}
+
+<h1>Settings</h1>
+
+{{ poller_running }}
+
+<form action="./settings" method="post">
+  Poller running:
+  <input type="checkbox" name="poller_running" value="runit" {% if poller_running %}checked="checked"{% endif %}>
+  <p>
+    <input type="submit">
+  </p>
+</form>
+
+{% endblock %}
