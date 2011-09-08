@@ -9,6 +9,7 @@ from datetime import datetime
 
 # AppEngine imports
 import wsgiref.handlers
+from google.appengine.api import memcache
 from google.appengine.ext import db
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
@@ -47,6 +48,17 @@ class BaseHandler(webapp.RequestHandler):
       self.generate('404.html')
 
 
+class SettingsHandler(BaseHandler):
+  def get(self):
+    poller_running = memcache.get("feed_poller_running") or False
+    self.generate('admin/settings.html', { "poller_running": poller_running })
+
+  def post(self):
+    runit = self.request.get('poller_running', default_value=None) != None 
+    memcache.set("feed_poller_running", runit)
+    self.redirect('/admin/settings')
+  
+
 class ListHandler(BaseHandler):
   def get(self):
     streams = FeedStream.all().order('-created').fetch(200)
@@ -77,6 +89,7 @@ def main():
   logging.getLogger().setLevel(logging.DEBUG)
   application = webapp.WSGIApplication([
           (r'/admin/', ListHandler),
+          (r'/admin/settings', SettingsHandler),
           (r'/admin/feed/(.*)/delete', DeleteHandler),
           (r'/admin/feed/(.*)', ViewHandler)],
           debug=True)
