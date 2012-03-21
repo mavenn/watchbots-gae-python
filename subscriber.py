@@ -149,7 +149,7 @@ class CallbackHandler(webapp.RequestHandler):
       # update feed last_polled or http_last_modified so feed poller doesn't have to check this feed for a while
       feedstream.last_polled = datetime.utcnow()
       feedstream.put()
-      self.update_mavenn_activity(feedstream.stream_id, to_put)
+      #self.update_mavenn_activity(feedstream.stream_id, to_put)
 
     # Response headers (body can be empty) 
     # X-Hub-On-Behalf-Of

@@ -65,7 +65,7 @@ class FeedBot(Watchbot):
         #key().name()
         
         # attempt to subscribe to feed via PubSubHubBub
-        taskqueue.add(url='/subscriber/subscribe', params={"key":str(feed.key())})
+        #taskqueue.add(url='/subscriber/subscribe', params={"key":str(feed.key())})
         
         self.response.headers['Content-Type'] = "application/json"
         self.response.out.write('{"status": "success", "message": "stream created"}')
